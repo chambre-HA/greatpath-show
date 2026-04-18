@@ -9,14 +9,17 @@ pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.vers
 const ZOOM_STEPS = [0.5, 0.75, 1, 1.25, 1.5, 2, 2.5, 3]
 const DEFAULT_ZOOM_INDEX = 2 // 1.0
 
-const R2_BASE = (process.env.NEXT_PUBLIC_R2_PUBLIC_URL ?? '').replace(/\/$/, '')
+const R2_HOSTS = ['r2.cloudflarestorage.com', 'vibeuncle.com']
 
 function resolveUrl(url: string, r2Key?: string): string {
   if (r2Key) return `/api/r2/proxy?key=${encodeURIComponent(r2Key)}`
-  if (R2_BASE && url.startsWith(R2_BASE)) {
-    const key = decodeURIComponent(url.slice(R2_BASE.length).replace(/^\//, ''))
-    return `/api/r2/proxy?key=${encodeURIComponent(key)}`
-  }
+  try {
+    const { hostname, pathname } = new URL(url)
+    if (R2_HOSTS.some(h => hostname.endsWith(h))) {
+      const key = decodeURIComponent(pathname.replace(/^\//, ''))
+      return `/api/r2/proxy?key=${encodeURIComponent(key)}`
+    }
+  } catch { /* not a valid URL, fall through */ }
   return url
 }
 
