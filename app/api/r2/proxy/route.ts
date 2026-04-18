@@ -31,7 +31,7 @@ export async function GET(req: Request) {
     if (!out.Body) return NextResponse.json({ error: 'empty body' }, { status: 500 })
 
     const bytes = await out.Body.transformToByteArray()
-    return new NextResponse(bytes, {
+    return new NextResponse(Buffer.from(bytes), {
       headers: {
         'Content-Type': out.ContentType ?? 'application/octet-stream',
         'Content-Length': bytes.byteLength.toString(),
