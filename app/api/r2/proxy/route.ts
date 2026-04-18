@@ -28,13 +28,13 @@ export async function GET(req: Request) {
     const out = await client.send(
       new GetObjectCommand({ Bucket: env('R2_BUCKET'), Key: key })
     )
-    const body = out.Body as ReadableStream | undefined
-    if (!body) return NextResponse.json({ error: 'empty body' }, { status: 500 })
+    if (!out.Body) return NextResponse.json({ error: 'empty body' }, { status: 500 })
 
-    return new NextResponse(body as ReadableStream, {
+    const bytes = await out.Body.transformToByteArray()
+    return new NextResponse(bytes, {
       headers: {
         'Content-Type': out.ContentType ?? 'application/octet-stream',
-        'Content-Length': out.ContentLength?.toString() ?? '',
+        'Content-Length': bytes.byteLength.toString(),
         'Cache-Control': 'private, max-age=300',
       },
     })
