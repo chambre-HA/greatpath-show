@@ -24,13 +24,15 @@ export async function GET(req: Request) {
     },
   })
 
+  const bucket = env('R2_BUCKET')
+  console.log(`[r2-proxy] key="${key}" bucket="${bucket}"`)
+
   try {
-    const out = await client.send(
-      new GetObjectCommand({ Bucket: env('R2_BUCKET'), Key: key })
-    )
+    const out = await client.send(new GetObjectCommand({ Bucket: bucket, Key: key }))
     if (!out.Body) return NextResponse.json({ error: 'empty body' }, { status: 500 })
 
     const bytes = await out.Body.transformToByteArray()
+    console.log(`[r2-proxy] ok, ${bytes.byteLength} bytes`)
     return new NextResponse(Buffer.from(bytes), {
       headers: {
         'Content-Type': out.ContentType ?? 'application/octet-stream',
@@ -39,10 +41,8 @@ export async function GET(req: Request) {
       },
     })
   } catch (e) {
-    console.error('R2 proxy failed', e)
-    return NextResponse.json(
-      { error: e instanceof Error ? e.message : 'unknown' },
-      { status: 500 }
-    )
+    const msg = e instanceof Error ? e.message : String(e)
+    console.error(`[r2-proxy] failed key="${key}":`, msg)
+    return NextResponse.json({ error: msg, key, bucket }, { status: 500 })
   }
 }
