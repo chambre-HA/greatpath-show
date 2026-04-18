@@ -5,9 +5,9 @@ import { Pause, Play, Plus, RotateCcw } from 'lucide-react'
 
 const PRESETS = [
   { label: '5m', ms: 5 * 60_000 },
-  { label: '6m', ms: 6 * 60_000 },
-  { label: '7m', ms: 7 * 60_000 },
   { label: '10m', ms: 10 * 60_000 },
+  { label: '15m', ms: 15 * 60_000 },
+  { label: '20m', ms: 20 * 60_000 },
 ]
 
 const TICK_COUNT = 60
@@ -57,8 +57,8 @@ function TimerRing({ fraction, done, low }: TimerRingProps) {
 }
 
 export function CountdownTimer() {
-  const [targetMs, setTargetMs] = useState(10 * 60_000)
-  const [remaining, setRemaining] = useState(10 * 60_000)
+  const [targetMs, setTargetMs] = useState(5 * 60_000)
+  const [remaining, setRemaining] = useState(5 * 60_000)
   const [running, setRunning] = useState(false)
   const endAtRef = useRef<number | null>(null)
 
