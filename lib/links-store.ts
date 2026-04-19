@@ -9,6 +9,8 @@ function detectKind(url: string): ShowLink['kind'] | null {
   if (/docs\.google\.com\/presentation\//.test(haystack)) return 'ppt'
   if (/view\.officeapps\.live\.com\/op\/embed/.test(haystack)) return 'ppt'
   if (/onedrive\.live\.com\/embed/.test(haystack)) return 'ppt'
+  if (/docworkspace\.com\/d\//.test(haystack)) return 'ppt'
+  if (/docs\.qq\.com\//.test(haystack)) return 'ppt'
   return null
 }
 

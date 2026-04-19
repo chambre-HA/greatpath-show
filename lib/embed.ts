@@ -36,6 +36,18 @@ export function getEmbedStrategy(link: ShowLink): EmbedStrategy {
   // Already an Office Online viewer link — fine.
   if (/view\.officeapps\.live\.com/i.test(url)) return { kind: 'direct', url }
 
+  // WPS DocWorkspace — blocks iframe embedding.
+  if (/docworkspace\.com\//i.test(url) || /docs\.wps\.com\//i.test(url)) {
+    return {
+      kind: 'blocked',
+      reason: 'WPS DocWorkspace blocks embedding in external sites.',
+      openUrl: url,
+    }
+  }
+
+  // Tencent Docs (腾讯文档) — embeddable in China.
+  if (/docs\.qq\.com\//i.test(url)) return { kind: 'direct', url }
+
   // Raw .pptx or .ppt → wrap with Office Online Viewer (requires publicly-downloadable URL).
   if (link.kind === 'ppt') {
     return { kind: 'office-online', url: `${OFFICE_VIEWER}${encodeURIComponent(url)}` }
