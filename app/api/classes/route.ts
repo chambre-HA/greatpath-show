@@ -10,7 +10,8 @@ export async function GET(req: Request) {
   try {
     const classes = await listClasses()
     if (code) {
-      return NextResponse.json({ valid: classes.some(c => c.code === code) })
+      const found = classes.find(c => c.code === code)
+      return NextResponse.json({ valid: Boolean(found), class: found ?? null })
     }
     return NextResponse.json(classes)
   } catch (e) {
