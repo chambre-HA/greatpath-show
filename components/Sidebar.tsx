@@ -16,6 +16,7 @@ function hostOf(url: string): string {
 
 interface SidebarProps {
   classCode: string
+  className: string
   links: ShowLink[]
   selectedId: string | null
   onSelect: (id: string) => void
@@ -24,7 +25,7 @@ interface SidebarProps {
   onBack: () => void
 }
 
-export function Sidebar({ classCode, links, selectedId, onSelect, onAdd, onRemove, onBack }: SidebarProps) {
+export function Sidebar({ classCode, className, links, selectedId, onSelect, onAdd, onRemove, onBack }: SidebarProps) {
   const [title, setTitle] = useState('')
   const [url, setUrl] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -62,7 +63,7 @@ export function Sidebar({ classCode, links, selectedId, onSelect, onAdd, onRemov
           </button>
           <div>
             <h1 className="text-base font-bold text-white leading-tight">共修平台</h1>
-            <p className="text-[11px] text-gray-600 font-mono tracking-widest"># {classCode}</p>
+            <p className="text-[11px] text-gray-600 truncate">{className}</p>
           </div>
         </div>
       </div>
