@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { addClass, addLink, deleteClass, listAllLinks, listClasses, removeLink } from '@/lib/r2-server'
+import { addClass, addLink, deleteClass, listAllLinks, listClasses, removeLink, reorderLinks, updateLink } from '@/lib/r2-server'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -29,6 +29,12 @@ export async function POST(req: Request) {
         return NextResponse.json({ ok: true })
       case 'removeLink':
         await removeLink(body.code, body.id)
+        return NextResponse.json({ ok: true })
+      case 'updateLink':
+        await updateLink(body.code, body.link)
+        return NextResponse.json({ ok: true })
+      case 'reorderLinks':
+        await reorderLinks(body.code, body.ids)
         return NextResponse.json({ ok: true })
       default:
         return NextResponse.json({ error: 'invalid action' }, { status: 400 })
