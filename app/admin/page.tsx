@@ -1,8 +1,8 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import { ChevronRight, FileText, Link2, Pencil, Presentation, Plus, Save, Trash2, X, ArrowUp, ArrowDown } from 'lucide-react'
-import { makeLink, validateLinkInput } from '@/lib/links-store'
+import { ChevronRight, Copy, EllipsisVertical, FileText, Link2, Pencil, Presentation, Plus, Save, Trash2, X, ArrowUp, ArrowDown } from 'lucide-react'
+import { cloneLink, makeLink, validateLinkInput } from '@/lib/links-store'
 import type { ClassInfo, ShowLink } from '@/types'
 
 // ── API helpers ──────────────────────────────────────────────────────────────
@@ -27,7 +27,9 @@ function hostOf(url: string) {
   try { return new URL(url).hostname.replace(/^www\./, '') } catch { return '' }
 }
 
-function ClassLinks({ password, classCode }: { password: string; classCode: string }) {
+type ContextMenuState = { id: string; x: number; y: number } | null
+
+function ClassLinks({ password, classCode, classes }: { password: string; classCode: string; classes: ClassInfo[] }) {
   const [links, setLinks] = useState<ShowLink[]>([])
   const [loading, setLoading] = useState(true)
   const [title, setTitle] = useState('')
@@ -37,6 +39,9 @@ function ClassLinks({ password, classCode }: { password: string; classCode: stri
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editTitle, setEditTitle] = useState('')
   const [editUrl, setEditUrl] = useState('')
+  const [contextMenu, setContextMenu] = useState<ContextMenuState>(null)
+  const [copyingLink, setCopyingLink] = useState<ShowLink | null>(null)
+  const [copyTargetCode, setCopyTargetCode] = useState('')
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -51,6 +56,16 @@ function ClassLinks({ password, classCode }: { password: string; classCode: stri
   }, [password, classCode])
 
   useEffect(() => { load() }, [load])
+  useEffect(() => {
+    if (!contextMenu) return
+
+    function closeMenu() {
+      setContextMenu(null)
+    }
+
+    window.addEventListener('click', closeMenu)
+    return () => window.removeEventListener('click', closeMenu)
+  }, [contextMenu])
 
   async function handleAdd(e: React.FormEvent) {
     e.preventDefault()
@@ -71,6 +86,7 @@ function ClassLinks({ password, classCode }: { password: string; classCode: stri
   }
 
   async function handleRemove(id: string) {
+    setContextMenu(null)
     try {
       await adminPost(password, { action: 'removeLink', code: classCode, id })
       await load()
@@ -80,6 +96,7 @@ function ClassLinks({ password, classCode }: { password: string; classCode: stri
   }
 
   function startEdit(link: ShowLink) {
+    setContextMenu(null)
     setEditingId(link.id)
     setEditTitle(link.title)
     setEditUrl(link.url)
@@ -120,6 +137,7 @@ function ClassLinks({ password, classCode }: { password: string; classCode: stri
   }
 
   async function handleMove(id: string, direction: -1 | 1) {
+    setContextMenu(null)
     const index = links.findIndex(link => link.id === id)
     const target = index + direction
     if (index < 0 || target < 0 || target >= links.length) return
@@ -143,6 +161,39 @@ function ClassLinks({ password, classCode }: { password: string; classCode: stri
       setBusy(false)
     }
   }
+
+  function openContextMenu(link: ShowLink, x: number, y: number) {
+    setContextMenu({ id: link.id, x, y })
+  }
+
+  function openCopyDialog(link: ShowLink) {
+    setContextMenu(null)
+    setCopyingLink(link)
+    const firstTarget = classes.find(cls => cls.code !== classCode)?.code ?? ''
+    setCopyTargetCode(firstTarget)
+  }
+
+  async function handleCopyToClass() {
+    if (!copyingLink || !copyTargetCode) return
+    setBusy(true)
+    setError(null)
+    try {
+      await adminPost(password, {
+        action: 'addLink',
+        code: copyTargetCode,
+        link: cloneLink(copyingLink),
+      })
+      setCopyingLink(null)
+      setCopyTargetCode('')
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const menuLink = contextMenu ? links.find(link => link.id === contextMenu.id) ?? null : null
+  const copyTargets = classes.filter(cls => cls.code !== classCode)
 
   if (loading) return <p className="text-xs text-gray-500 py-2">Loading…</p>
 
@@ -176,75 +227,168 @@ function ClassLinks({ password, classCode }: { password: string; classCode: stri
       {links.length === 0 ? (
         <p className="text-xs text-gray-600 italic">No links yet.</p>
       ) : (
+        <div className="relative">
         <ul className="space-y-1">
           {links.map(link => {
             const isExternal = !link.id.startsWith('r2:')
             const sizeMb = link.size ? Math.round(link.size / (1024 * 1024)) : null
             const isEditing = editingId === link.id
             return (
-              <li key={link.id} className="px-2 py-2 rounded bg-gray-900 group space-y-2">
+              <li
+                key={link.id}
+                className="px-2 py-2 rounded bg-gray-900 group space-y-2"
+                onContextMenu={e => {
+                  e.preventDefault()
+                  openContextMenu(link, e.clientX, e.clientY)
+                }}
+              >
                 <div className="flex items-start gap-2">
-                {link.kind === 'pdf'
-                  ? <FileText size={13} className="text-red-400 shrink-0" />
-                  : <Presentation size={13} className="text-orange-400 shrink-0" />}
-                <div className="flex-1 min-w-0">
-                  {isEditing ? (
-                    <div className="space-y-2">
-                      <input
-                        type="text"
-                        value={editTitle}
-                        onChange={e => setEditTitle(e.target.value)}
-                        className="w-full px-2 py-1.5 text-sm rounded bg-gray-950 border border-gray-700 text-gray-100"
-                      />
-                      <input
-                        type="url"
-                        value={editUrl}
-                        onChange={e => setEditUrl(e.target.value)}
-                        disabled={!isExternal}
-                        className="w-full px-2 py-1.5 text-xs rounded bg-gray-950 border border-gray-700 text-gray-300 disabled:opacity-60"
-                      />
-                    </div>
-                  ) : (
-                    <>
-                      <p className="text-sm text-gray-200 truncate">{link.title}</p>
-                      <p className="text-[10px] text-gray-600 flex items-center gap-1 truncate">
-                        {isExternal ? <><Link2 size={10} />{link.url}</> : <>{sizeMb} MB</>}
-                      </p>
-                    </>
-                  )}
+                  {link.kind === 'pdf'
+                    ? <FileText size={13} className="text-red-400 shrink-0" />
+                    : <Presentation size={13} className="text-orange-400 shrink-0" />}
+                  <div className="flex-1 min-w-0">
+                    {isEditing ? (
+                      <div className="space-y-2">
+                        <input
+                          type="text"
+                          value={editTitle}
+                          onChange={e => setEditTitle(e.target.value)}
+                          className="w-full px-2 py-1.5 text-sm rounded bg-gray-950 border border-gray-700 text-gray-100"
+                        />
+                        <input
+                          type="url"
+                          value={editUrl}
+                          onChange={e => setEditUrl(e.target.value)}
+                          disabled={!isExternal}
+                          className="w-full px-2 py-1.5 text-xs rounded bg-gray-950 border border-gray-700 text-gray-300 disabled:opacity-60"
+                        />
+                      </div>
+                    ) : (
+                      <>
+                        <p className="text-sm text-gray-200 truncate">{link.title}</p>
+                        <p className="text-[10px] text-gray-600 flex items-center gap-1 truncate">
+                          {isExternal ? <><Link2 size={10} />{hostOf(link.url)}</> : <>{sizeMb} MB</>}
+                        </p>
+                      </>
+                    )}
+                  </div>
+                  <div className="shrink-0">
+                    {isEditing ? (
+                      <button
+                        type="button"
+                        onClick={() => handleSave(link)}
+                        disabled={busy}
+                        className="p-1.5 rounded text-gray-500 hover:text-emerald-400 hover:bg-gray-800 disabled:opacity-30"
+                        aria-label="Save"
+                      >
+                        <Save size={12} />
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={e => {
+                          e.stopPropagation()
+                          const rect = e.currentTarget.getBoundingClientRect()
+                          openContextMenu(link, rect.right + 4, rect.top)
+                        }}
+                        disabled={busy}
+                        className="p-1.5 rounded text-gray-500 hover:text-gray-200 hover:bg-gray-800 disabled:opacity-30"
+                        aria-label="Actions"
+                      >
+                        <EllipsisVertical size={12} />
+                      </button>
+                    )}
+                  </div>
                 </div>
-                <div className="flex flex-col items-center gap-1 shrink-0">
-                  <button onClick={() => handleMove(link.id, -1)} disabled={busy}
-                    className="p-1 text-gray-500 hover:text-gray-200 disabled:opacity-30" aria-label="Move up">
-                    <ArrowUp size={12} />
-                  </button>
-                  <button onClick={() => handleMove(link.id, 1)} disabled={busy}
-                    className="p-1 text-gray-500 hover:text-gray-200 disabled:opacity-30" aria-label="Move down">
-                    <ArrowDown size={12} />
-                  </button>
-                </div>
-                <div className="flex flex-col items-center gap-1 shrink-0">
-                  {isEditing ? (
-                    <button onClick={() => handleSave(link)} disabled={busy}
-                      className="p-1 text-gray-500 hover:text-emerald-400 disabled:opacity-30" aria-label="Save">
-                      <Save size={12} />
+                {!isEditing && (
+                  <p className="text-[10px] text-gray-700">Right-click for doc actions</p>
+                )}
+                {isEditing && (
+                  <div className="flex justify-end">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditingId(null)
+                        setEditTitle('')
+                        setEditUrl('')
+                      }}
+                      className="text-xs text-gray-500 hover:text-gray-300"
+                    >
+                      Cancel
                     </button>
-                  ) : (
-                    <button onClick={() => startEdit(link)} disabled={busy}
-                      className="p-1 text-gray-500 hover:text-gray-200 disabled:opacity-30" aria-label="Edit">
-                      <Pencil size={12} />
-                    </button>
-                  )}
-                  <button onClick={() => handleRemove(link.id)} disabled={busy}
-                    className="p-1 text-gray-500 hover:text-red-400 disabled:opacity-30" aria-label="Remove">
-                    <Trash2 size={12} />
-                  </button>
-                </div>
-                </div>
+                  </div>
+                )}
               </li>
             )
           })}
         </ul>
+        {menuLink && contextMenu && (
+          <div
+            className="fixed z-50 w-44 rounded-lg border border-gray-800 bg-gray-950 shadow-2xl overflow-hidden"
+            style={{ left: contextMenu.x, top: contextMenu.y }}
+            onClick={e => e.stopPropagation()}
+          >
+            <button type="button" onClick={() => startEdit(menuLink)} className="w-full px-3 py-2 text-left text-sm text-gray-200 hover:bg-gray-900 flex items-center gap-2">
+              <Pencil size={12} /> Edit
+            </button>
+            <button type="button" onClick={() => handleMove(menuLink.id, -1)} disabled={busy || links[0]?.id === menuLink.id} className="w-full px-3 py-2 text-left text-sm text-gray-200 hover:bg-gray-900 disabled:opacity-30 flex items-center gap-2">
+              <ArrowUp size={12} /> Move up
+            </button>
+            <button type="button" onClick={() => handleMove(menuLink.id, 1)} disabled={busy || links[links.length - 1]?.id === menuLink.id} className="w-full px-3 py-2 text-left text-sm text-gray-200 hover:bg-gray-900 disabled:opacity-30 flex items-center gap-2">
+              <ArrowDown size={12} /> Move down
+            </button>
+            <button type="button" onClick={() => openCopyDialog(menuLink)} disabled={copyTargets.length === 0} className="w-full px-3 py-2 text-left text-sm text-gray-200 hover:bg-gray-900 disabled:opacity-30 flex items-center gap-2">
+              <Copy size={12} /> Copy to class
+            </button>
+            <button type="button" onClick={() => handleRemove(menuLink.id)} className="w-full px-3 py-2 text-left text-sm text-red-400 hover:bg-gray-900 flex items-center gap-2">
+              <Trash2 size={12} /> Delete
+            </button>
+          </div>
+        )}
+        </div>
+      )}
+
+      {copyingLink && (
+        <div className="fixed inset-0 z-40 bg-black/60 flex items-center justify-center p-4">
+          <div className="w-full max-w-sm rounded-xl border border-gray-800 bg-gray-950 p-4 space-y-4">
+            <div>
+              <h3 className="text-sm font-semibold text-white">Copy doc to another class</h3>
+              <p className="text-xs text-gray-500 truncate">{copyingLink.title}</p>
+            </div>
+            <select
+              value={copyTargetCode}
+              onChange={e => setCopyTargetCode(e.target.value)}
+              className="w-full px-3 py-2 text-sm rounded bg-gray-900 border border-gray-700 text-gray-100"
+            >
+              <option value="">Select target class</option>
+              {copyTargets.map(cls => (
+                <option key={cls.code} value={cls.code}>
+                  {cls.code} - {cls.name}
+                </option>
+              ))}
+            </select>
+            <div className="flex items-center justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setCopyingLink(null)
+                  setCopyTargetCode('')
+                }}
+                className="text-sm text-gray-500 hover:text-gray-300"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleCopyToClass}
+                disabled={busy || !copyTargetCode}
+                className="px-3 py-2 text-sm rounded bg-gray-100 text-gray-900 font-medium hover:bg-white disabled:opacity-40"
+              >
+                {busy ? 'Copying…' : 'Copy'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )
@@ -264,6 +408,8 @@ export default function AdminPage() {
   const [newName, setNewName] = useState('')
   const [classError, setClassError] = useState<string | null>(null)
   const [classBusy, setClassBusy] = useState(false)
+  const [editingClassCode, setEditingClassCode] = useState<string | null>(null)
+  const [editClassName, setEditClassName] = useState('')
 
   const selectedClass = classes.find(c => c.code === selectedCode) ?? null
 
@@ -317,6 +463,37 @@ export default function AdminPage() {
       await loadClasses(password)
     } catch (e) {
       setClassError(e instanceof Error ? e.message : 'Failed')
+    }
+  }
+
+  function startEditClass(cls: ClassInfo) {
+    setEditingClassCode(cls.code)
+    setEditClassName(cls.name)
+    setClassError(null)
+  }
+
+  async function handleSaveClassName(cls: ClassInfo) {
+    const name = editClassName.trim()
+    if (!name) {
+      setClassError('Class name cannot be empty.')
+      return
+    }
+    setClassBusy(true)
+    setClassError(null)
+    try {
+      await adminPost(password, {
+        action: 'updateClass',
+        code: cls.code,
+        name,
+        createdAt: cls.createdAt,
+      })
+      setEditingClassCode(null)
+      setEditClassName('')
+      await loadClasses(password)
+    } catch (e) {
+      setClassError(e instanceof Error ? e.message : 'Failed')
+    } finally {
+      setClassBusy(false)
     }
   }
 
@@ -412,8 +589,43 @@ export default function AdminPage() {
                 >
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-mono truncate">{cls.code}</p>
-                    {cls.name && <p className="text-[10px] text-gray-500 truncate">{cls.name}</p>}
+                    {editingClassCode === cls.code ? (
+                      <div className="mt-1 flex items-center gap-1">
+                        <input
+                          type="text"
+                          value={editClassName}
+                          onChange={e => setEditClassName(e.target.value)}
+                          onClick={e => e.stopPropagation()}
+                          className="w-full px-2 py-1 text-[11px] rounded bg-gray-950 border border-gray-700 text-gray-100"
+                        />
+                        <button
+                          type="button"
+                          onClick={e => {
+                            e.stopPropagation()
+                            handleSaveClassName(cls)
+                          }}
+                          disabled={classBusy}
+                          className="p-1 text-gray-400 hover:text-emerald-400 disabled:opacity-30"
+                          aria-label="Save class name"
+                        >
+                          <Save size={12} />
+                        </button>
+                      </div>
+                    ) : (
+                      cls.name && <p className="text-[10px] text-gray-500 truncate">{cls.name}</p>
+                    )}
                   </div>
+                  <button
+                    type="button"
+                    onClick={e => {
+                      e.stopPropagation()
+                      startEditClass(cls)
+                    }}
+                    className="opacity-0 group-hover:opacity-100 p-1 text-gray-600 hover:text-gray-300 shrink-0"
+                    aria-label="Edit class name"
+                  >
+                    <Pencil size={12} />
+                  </button>
                   <ChevronRight size={14} className={`shrink-0 transition-opacity ${selectedCode === cls.code ? 'opacity-100' : 'opacity-0 group-hover:opacity-40'}`} />
                   <button
                     onClick={e => { e.stopPropagation(); handleDeleteClass(cls.code) }}
@@ -442,7 +654,7 @@ export default function AdminPage() {
                   {selectedClass?.name ?? selectedCode}
                 </p>
               </div>
-              <ClassLinks password={password} classCode={selectedCode} />
+              <ClassLinks password={password} classCode={selectedCode} classes={classes} />
             </div>
           )}
         </section>
