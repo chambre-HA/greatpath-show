@@ -35,6 +35,17 @@ export function makeLink(title: string, url: string, kind: ShowLink['kind']): Sh
   }
 }
 
+export function cloneLink(link: ShowLink, overrides?: Partial<ShowLink>): ShowLink {
+  return {
+    id: crypto.randomUUID(),
+    title: link.title,
+    url: link.url,
+    kind: link.kind,
+    addedAt: new Date().toISOString(),
+    ...overrides,
+  }
+}
+
 interface LinkStore {
   list(): Promise<ShowLink[]>
   add(link: ShowLink): Promise<void>

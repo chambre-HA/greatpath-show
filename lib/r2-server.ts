@@ -140,6 +140,23 @@ export async function addClass(info: ClassInfo): Promise<void> {
   }
 }
 
+export async function updateClass(info: ClassInfo): Promise<void> {
+  const client = getClient()
+  const next = normalizeClassInfo(info)
+  validateClassCode(next.code)
+
+  const classes = await listClasses()
+  const index = classes.findIndex(c => c.code === next.code)
+  if (index < 0) {
+    throw new Error('Class not found')
+  }
+  classes[index] = {
+    ...classes[index],
+    name: next.name,
+  }
+  await putJson(client, CLASSES_KEY, classes)
+}
+
 export async function deleteClass(code: string): Promise<void> {
   const client = getClient()
   const classes = await listClasses()
