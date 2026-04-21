@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation'
 import { Sidebar } from '@/components/Sidebar'
 import { Viewer } from '@/components/Viewer'
 import { getStore } from '@/lib/links-store'
-import type { ShowLink } from '@/types'
+import type { ClassInfo, ShowLink } from '@/types'
 
 export default function ClassPage() {
   const params = useParams()
@@ -13,6 +13,7 @@ export default function ClassPage() {
   const router = useRouter()
   const [links, setLinks] = useState<ShowLink[]>([])
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [classInfo, setClassInfo] = useState<ClassInfo | null>(null)
 
   useEffect(() => {
     const s = window.localStorage.getItem(`greatpath-show:${classCode}:selected`)
@@ -30,6 +31,25 @@ export default function ClassPage() {
   }, [classCode])
 
   useEffect(() => { refresh() }, [refresh])
+
+  useEffect(() => {
+    let cancelled = false
+
+    async function loadClassInfo() {
+      try {
+        const res = await fetch(`/api/classes?code=${encodeURIComponent(classCode)}`, { cache: 'no-store' })
+        if (!res.ok) throw new Error(`Failed to load class: ${res.status}`)
+        const data = await res.json()
+        if (!cancelled) setClassInfo(data.class ?? null)
+      } catch (e) {
+        console.error('Failed to load class info', e)
+        if (!cancelled) setClassInfo(null)
+      }
+    }
+
+    loadClassInfo()
+    return () => { cancelled = true }
+  }, [classCode])
 
   useEffect(() => {
     const key = `greatpath-show:${classCode}:selected`
@@ -55,6 +75,7 @@ export default function ClassPage() {
     <main className="flex h-screen bg-gray-900 text-gray-100 overflow-hidden">
       <Sidebar
         classCode={classCode}
+        className={classInfo?.name || classCode}
         links={links}
         selectedId={selectedId}
         onSelect={setSelectedId}
