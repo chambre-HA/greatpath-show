@@ -38,6 +38,8 @@ export function makeLink(title: string, url: string, kind: ShowLink['kind']): Sh
 interface LinkStore {
   list(): Promise<ShowLink[]>
   add(link: ShowLink): Promise<void>
+  update(link: ShowLink): Promise<void>
+  reorder(ids: string[]): Promise<void>
   remove(id: string): Promise<void>
 }
 
@@ -66,6 +68,22 @@ export function getStore(classCode: string): LinkStore {
         body: JSON.stringify({ action: 'remove', class: classCode, id }),
       })
       if (!res.ok) throw new Error(`Remove failed: ${res.status}`)
+    },
+    async update(link) {
+      const res = await fetch('/api/links', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'update', class: classCode, link }),
+      })
+      if (!res.ok) throw new Error(`Update failed: ${res.status}`)
+    },
+    async reorder(ids) {
+      const res = await fetch('/api/links', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'reorder', class: classCode, ids }),
+      })
+      if (!res.ok) throw new Error(`Reorder failed: ${res.status}`)
     },
   }
 }
