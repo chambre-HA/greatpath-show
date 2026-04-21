@@ -13,6 +13,10 @@ export default function Home() {
     e.preventDefault()
     const trimmed = code.trim()
     if (!trimmed) return
+    if (!/^\d{8}$/.test(trimmed)) {
+      setError('Class code must be 8 digits.')
+      return
+    }
     setLoading(true)
     setError(null)
     try {
@@ -43,11 +47,11 @@ export default function Home() {
             type="text"
             value={code}
             onChange={e => setCode(e.target.value)}
-            placeholder="7位班级码"
+            placeholder="8位班级码"
             autoFocus
             className="w-full px-4 py-3 text-center text-xl font-mono tracking-widest rounded-lg bg-gray-900 border border-gray-700 text-white placeholder-gray-600 focus:outline-none focus:border-gray-500"
           />
-          {error && <p className="text-xs text-red-400 text-center">班级码无效，请重新输入。</p>}
+          {error && <p className="text-xs text-red-400 text-center">{error}</p>}
           <button
             type="submit"
             disabled={loading || !code.trim()}
