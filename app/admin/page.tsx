@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import { ChevronRight, FileText, Link2, Presentation, Plus, Trash2, X } from 'lucide-react'
+import { ChevronRight, FileText, Link2, Pencil, Presentation, Plus, Save, Trash2, X, ArrowUp, ArrowDown } from 'lucide-react'
 import { makeLink, validateLinkInput } from '@/lib/links-store'
 import type { ClassInfo, ShowLink } from '@/types'
 
@@ -34,6 +34,9 @@ function ClassLinks({ password, classCode }: { password: string; classCode: stri
   const [url, setUrl] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editTitle, setEditTitle] = useState('')
+  const [editUrl, setEditUrl] = useState('')
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -76,6 +79,71 @@ function ClassLinks({ password, classCode }: { password: string; classCode: stri
     }
   }
 
+  function startEdit(link: ShowLink) {
+    setEditingId(link.id)
+    setEditTitle(link.title)
+    setEditUrl(link.url)
+    setError(null)
+  }
+
+  async function handleSave(link: ShowLink) {
+    const title = editTitle.trim() || link.title
+    const nextUrl = link.id.startsWith('r2:') ? link.url : editUrl.trim()
+    let nextKind = link.kind
+
+    if (!link.id.startsWith('r2:')) {
+      const check = validateLinkInput(nextUrl)
+      if (!check.ok) {
+        setError(check.reason)
+        return
+      }
+      nextKind = check.kind
+    }
+
+    setBusy(true)
+    setError(null)
+    try {
+      await adminPost(password, {
+        action: 'updateLink',
+        code: classCode,
+        link: { ...link, title, url: nextUrl, kind: nextKind, order: link.order },
+      })
+      setEditingId(null)
+      setEditTitle('')
+      setEditUrl('')
+      await load()
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function handleMove(id: string, direction: -1 | 1) {
+    const index = links.findIndex(link => link.id === id)
+    const target = index + direction
+    if (index < 0 || target < 0 || target >= links.length) return
+
+    const reordered = [...links]
+    const [item] = reordered.splice(index, 1)
+    reordered.splice(target, 0, item)
+
+    setBusy(true)
+    setError(null)
+    try {
+      await adminPost(password, {
+        action: 'reorderLinks',
+        code: classCode,
+        ids: reordered.map(link => link.id),
+      })
+      await load()
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed')
+    } finally {
+      setBusy(false)
+    }
+  }
+
   if (loading) return <p className="text-xs text-gray-500 py-2">Loading…</p>
 
   return (
@@ -112,21 +180,67 @@ function ClassLinks({ password, classCode }: { password: string; classCode: stri
           {links.map(link => {
             const isExternal = !link.id.startsWith('r2:')
             const sizeMb = link.size ? Math.round(link.size / (1024 * 1024)) : null
+            const isEditing = editingId === link.id
             return (
-              <li key={link.id} className="flex items-center gap-2 px-2 py-2 rounded bg-gray-900 group">
+              <li key={link.id} className="px-2 py-2 rounded bg-gray-900 group space-y-2">
+                <div className="flex items-start gap-2">
                 {link.kind === 'pdf'
                   ? <FileText size={13} className="text-red-400 shrink-0" />
                   : <Presentation size={13} className="text-orange-400 shrink-0" />}
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm text-gray-200 truncate">{link.title}</p>
-                  <p className="text-[10px] text-gray-600 flex items-center gap-1">
-                    {isExternal ? <><Link2 size={10} />{hostOf(link.url)}</> : <>{sizeMb} MB</>}
-                  </p>
+                  {isEditing ? (
+                    <div className="space-y-2">
+                      <input
+                        type="text"
+                        value={editTitle}
+                        onChange={e => setEditTitle(e.target.value)}
+                        className="w-full px-2 py-1.5 text-sm rounded bg-gray-950 border border-gray-700 text-gray-100"
+                      />
+                      <input
+                        type="url"
+                        value={editUrl}
+                        onChange={e => setEditUrl(e.target.value)}
+                        disabled={!isExternal}
+                        className="w-full px-2 py-1.5 text-xs rounded bg-gray-950 border border-gray-700 text-gray-300 disabled:opacity-60"
+                      />
+                    </div>
+                  ) : (
+                    <>
+                      <p className="text-sm text-gray-200 truncate">{link.title}</p>
+                      <p className="text-[10px] text-gray-600 flex items-center gap-1 truncate">
+                        {isExternal ? <><Link2 size={10} />{link.url}</> : <>{sizeMb} MB</>}
+                      </p>
+                    </>
+                  )}
                 </div>
-                <button onClick={() => handleRemove(link.id)}
-                  className="opacity-0 group-hover:opacity-100 p-1 text-gray-500 hover:text-red-400" aria-label="Remove">
-                  <Trash2 size={12} />
-                </button>
+                <div className="flex flex-col items-center gap-1 shrink-0">
+                  <button onClick={() => handleMove(link.id, -1)} disabled={busy}
+                    className="p-1 text-gray-500 hover:text-gray-200 disabled:opacity-30" aria-label="Move up">
+                    <ArrowUp size={12} />
+                  </button>
+                  <button onClick={() => handleMove(link.id, 1)} disabled={busy}
+                    className="p-1 text-gray-500 hover:text-gray-200 disabled:opacity-30" aria-label="Move down">
+                    <ArrowDown size={12} />
+                  </button>
+                </div>
+                <div className="flex flex-col items-center gap-1 shrink-0">
+                  {isEditing ? (
+                    <button onClick={() => handleSave(link)} disabled={busy}
+                      className="p-1 text-gray-500 hover:text-emerald-400 disabled:opacity-30" aria-label="Save">
+                      <Save size={12} />
+                    </button>
+                  ) : (
+                    <button onClick={() => startEdit(link)} disabled={busy}
+                      className="p-1 text-gray-500 hover:text-gray-200 disabled:opacity-30" aria-label="Edit">
+                      <Pencil size={12} />
+                    </button>
+                  )}
+                  <button onClick={() => handleRemove(link.id)} disabled={busy}
+                    className="p-1 text-gray-500 hover:text-red-400 disabled:opacity-30" aria-label="Remove">
+                    <Trash2 size={12} />
+                  </button>
+                </div>
+                </div>
               </li>
             )
           })}
@@ -151,6 +265,8 @@ export default function AdminPage() {
   const [classError, setClassError] = useState<string | null>(null)
   const [classBusy, setClassBusy] = useState(false)
 
+  const selectedClass = classes.find(c => c.code === selectedCode) ?? null
+
   const loadClasses = useCallback(async (pw: string) => {
     const data = await adminPost(pw, { action: 'listClasses' })
     setClasses(Array.isArray(data) ? data : [])
@@ -172,11 +288,17 @@ export default function AdminPage() {
 
   async function handleAddClass(e: React.FormEvent) {
     e.preventDefault()
-    if (!newCode.trim()) return
+    const code = newCode.trim()
+    const name = newName.trim()
+    if (!code || !name) return
+    if (!/^\d{8}$/.test(code)) {
+      setClassError('Class code must be exactly 8 digits.')
+      return
+    }
     setClassBusy(true)
     setClassError(null)
     try {
-      await adminPost(password, { action: 'addClass', code: newCode.trim(), name: newName.trim() || undefined })
+      await adminPost(password, { action: 'addClass', code, name })
       setNewCode('')
       setNewName('')
       await loadClasses(password)
@@ -254,20 +376,22 @@ export default function AdminPage() {
             <form onSubmit={handleAddClass} className="space-y-2">
               <input
                 type="text"
-                placeholder="Code (e.g. 8312459)"
+                placeholder="Class code (e.g. 42241037)"
                 value={newCode}
                 onChange={e => setNewCode(e.target.value)}
+                inputMode="numeric"
+                maxLength={8}
                 className="w-full px-2 py-1.5 text-sm rounded bg-gray-900 border border-gray-700 text-gray-100 placeholder-gray-600 font-mono"
               />
               <input
                 type="text"
-                placeholder="Name (optional)"
+                placeholder="Class name"
                 value={newName}
                 onChange={e => setNewName(e.target.value)}
                 className="w-full px-2 py-1.5 text-sm rounded bg-gray-900 border border-gray-700 text-gray-100 placeholder-gray-600"
               />
               {classError && <p className="text-xs text-red-400">{classError}</p>}
-              <button type="submit" disabled={classBusy || !newCode.trim()}
+              <button type="submit" disabled={classBusy || !newCode.trim() || !newName.trim()}
                 className="w-full flex items-center justify-center gap-1 py-1.5 text-sm rounded bg-gray-800 text-gray-200 hover:bg-gray-700 disabled:opacity-40">
                 <Plus size={14} /> Add Class
               </button>
@@ -315,7 +439,7 @@ export default function AdminPage() {
               <div>
                 <h2 className="text-base font-semibold text-white font-mono">{selectedCode}</h2>
                 <p className="text-xs text-gray-500">
-                  {classes.find(c => c.code === selectedCode)?.name ?? 'No name set'}
+                  {selectedClass?.name ?? selectedCode}
                 </p>
               </div>
               <ClassLinks password={password} classCode={selectedCode} />
