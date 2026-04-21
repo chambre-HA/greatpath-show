@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { addClass, addLink, deleteClass, listAllLinks, listClasses, removeLink, reorderLinks, updateLink } from '@/lib/r2-server'
+import { addClass, addLink, deleteClass, listAllLinks, listClasses, removeLink, reorderLinks, updateClass, updateLink } from '@/lib/r2-server'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -21,6 +21,9 @@ export async function POST(req: Request) {
         return NextResponse.json({ ok: true })
       case 'deleteClass':
         await deleteClass(body.code)
+        return NextResponse.json({ ok: true })
+      case 'updateClass':
+        await updateClass({ code: body.code, name: body.name, createdAt: body.createdAt ?? new Date().toISOString() })
         return NextResponse.json({ ok: true })
       case 'listLinks':
         return NextResponse.json(await listAllLinks(body.code))
