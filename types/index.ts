@@ -59,7 +59,7 @@ export type StorageMode = 'local' | 'r2'
 
 export interface ClassInfo {
   code: string
-  name?: string
+  name: string
   createdAt: string
 }
 
@@ -69,6 +69,7 @@ export interface ShowLink {
   url: string
   kind: ShowLinkKind
   addedAt: string
+  order?: number
   size?: number
   r2Key?: string
 }
