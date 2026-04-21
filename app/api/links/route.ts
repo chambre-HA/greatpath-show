@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { addLink, listAllLinks, removeLink } from '@/lib/r2-server'
+import { addLink, listAllLinks, removeLink, reorderLinks, updateLink } from '@/lib/r2-server'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -29,6 +29,14 @@ export async function POST(req: Request) {
     }
     if (body.action === 'remove' && typeof body.id === 'string') {
       await removeLink(classCode, body.id)
+      return NextResponse.json({ ok: true })
+    }
+    if (body.action === 'update' && body.link) {
+      await updateLink(classCode, body.link)
+      return NextResponse.json({ ok: true })
+    }
+    if (body.action === 'reorder' && Array.isArray(body.ids)) {
+      await reorderLinks(classCode, body.ids)
       return NextResponse.json({ ok: true })
     }
     return NextResponse.json({ error: 'invalid action' }, { status: 400 })
