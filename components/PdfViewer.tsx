@@ -36,11 +36,15 @@ export function PdfViewer({ url, r2Key }: PdfViewerProps) {
   const [containerWidth, setContainerWidth] = useState<number | undefined>(undefined)
   const [zoomIdx, setZoomIdx] = useState(DEFAULT_ZOOM_INDEX)
   const [fullscreen, setFullscreen] = useState(false)
+  const pinnedPages = useRef<Map<string, number>>(new Map())
 
   const zoom = ZOOM_STEPS[zoomIdx]
   const pageWidth = containerWidth ? Math.round(containerWidth * zoom) : undefined
 
-  useEffect(() => { setPage(1) }, [url])
+  useEffect(() => {
+    setPage(pinnedPages.current.get(url) ?? 1)
+    setNumPages(0)
+  }, [url])
 
   useEffect(() => {
     const el = containerRef.current
@@ -58,8 +62,13 @@ export function PdfViewer({ url, r2Key }: PdfViewerProps) {
     return () => document.removeEventListener('fullscreenchange', onFs)
   }, [])
 
-  const next = useCallback(() => setPage((p) => Math.min(p + 1, numPages)), [numPages])
-  const prev = useCallback(() => setPage((p) => Math.max(p - 1, 1)), [])
+  const goToPage = useCallback((p: number) => {
+    pinnedPages.current.set(url, p)
+    setPage(p)
+  }, [url])
+
+  const next = useCallback(() => goToPage(Math.min(page + 1, numPages)), [goToPage, page, numPages])
+  const prev = useCallback(() => goToPage(Math.max(page - 1, 1)), [goToPage, page])
   const zoomIn = useCallback(() => setZoomIdx((i) => Math.min(i + 1, ZOOM_STEPS.length - 1)), [])
   const zoomOut = useCallback(() => setZoomIdx((i) => Math.max(i - 1, 0)), [])
 

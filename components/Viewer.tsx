@@ -2,7 +2,7 @@
 
 import dynamic from 'next/dynamic'
 import { useRef, useState, useEffect } from 'react'
-import { AlertTriangle, ExternalLink, FileQuestion, Maximize2, Minimize2 } from 'lucide-react'
+import { AlertTriangle, ExternalLink, FileQuestion, FileText, Maximize2, Minimize2, Presentation, X } from 'lucide-react'
 import { getEmbedStrategy } from '@/lib/embed'
 import type { ShowLink } from '@/types'
 
@@ -16,11 +16,15 @@ const PdfViewer = dynamic(() => import('./PdfViewer').then((m) => m.PdfViewer), 
 })
 
 interface ViewerProps {
-  link: ShowLink | null
+  links: ShowLink[]
+  openTabIds: string[]
+  activeTabId: string | null
+  onActivate: (id: string) => void
+  onClose: (id: string) => void
 }
 
-export function Viewer({ link }: ViewerProps) {
-  if (!link) {
+export function Viewer({ links, openTabIds, activeTabId, onActivate, onClose }: ViewerProps) {
+  if (openTabIds.length === 0) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center text-gray-500">
         <FileQuestion size={48} className="mb-3 opacity-40" />
@@ -30,26 +34,74 @@ export function Viewer({ link }: ViewerProps) {
   }
 
   return (
-    <div className="flex-1 flex flex-col bg-gray-900 min-w-0">
-      <header className="flex items-center gap-3 px-4 py-3 border-b border-gray-800 bg-gray-950">
-        <h2 className="flex-1 text-sm font-medium text-white truncate">{link.title}</h2>
-        <a
-          href={link.url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="p-1.5 text-gray-400 hover:text-white"
-          title="Open source URL"
-        >
-          <ExternalLink size={14} />
-        </a>
-      </header>
+    <div className="flex-1 flex flex-col bg-gray-900 min-w-0 overflow-hidden">
+      {/* Tab bar */}
+      <div className="flex items-end overflow-x-auto bg-gray-950 border-b border-gray-800 shrink-0 scrollbar-none">
+        {openTabIds.map(id => {
+          const link = links.find(l => l.id === id)
+          if (!link) return null
+          const active = id === activeTabId
+          return (
+            <button
+              key={id}
+              onClick={() => onActivate(id)}
+              className={`group flex items-center gap-1.5 px-3 py-2.5 border-r border-gray-800 shrink-0 max-w-[180px] min-w-0 transition-colors ${
+                active
+                  ? 'bg-gray-900 text-white border-b-2 border-b-gray-400 -mb-px'
+                  : 'text-gray-500 hover:text-gray-300 hover:bg-gray-900/50'
+              }`}
+            >
+              {link.kind === 'pdf'
+                ? <FileText size={12} className="text-red-400 shrink-0" />
+                : <Presentation size={12} className="text-orange-400 shrink-0" />}
+              <span className="text-xs truncate flex-1 text-left">{link.title}</span>
+              <span
+                role="button"
+                onClick={e => { e.stopPropagation(); onClose(id) }}
+                className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-gray-700 text-gray-400 hover:text-gray-200 shrink-0 ml-1"
+                aria-label="Close tab"
+              >
+                <X size={10} />
+              </span>
+            </button>
+          )
+        })}
+      </div>
 
-      <div className="flex-1 min-h-0 relative">
-        {link.kind === 'pdf' ? (
-          <PdfViewer url={link.url} r2Key={link.r2Key} />
-        ) : (
-          <PptxViewer link={link} />
-        )}
+      {/* Viewers — all mounted, only active one visible */}
+      <div className="flex-1 relative min-h-0">
+        {openTabIds.map(id => {
+          const link = links.find(l => l.id === id)
+          if (!link) return null
+          const active = id === activeTabId
+          return (
+            <div
+              key={id}
+              className="absolute inset-0 flex flex-col"
+              style={{ display: active ? 'flex' : 'none' }}
+            >
+              <header className="flex items-center gap-3 px-4 py-3 border-b border-gray-800 bg-gray-950 shrink-0">
+                <h2 className="flex-1 text-sm font-medium text-white truncate">{link.title}</h2>
+                <a
+                  href={link.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="p-1.5 text-gray-400 hover:text-white"
+                  title="Open source URL"
+                >
+                  <ExternalLink size={14} />
+                </a>
+              </header>
+              <div className="flex-1 min-h-0 relative">
+                {link.kind === 'pdf' ? (
+                  <PdfViewer url={link.url} r2Key={link.r2Key} />
+                ) : (
+                  <PptxViewer link={link} />
+                )}
+              </div>
+            </div>
+          )
+        })}
       </div>
     </div>
   )
@@ -63,7 +115,6 @@ function PptxViewer({ link }: { link: ShowLink }) {
   const [loaded, setLoaded] = useState(false)
   const strategy = getEmbedStrategy(link)
 
-  useEffect(() => { setLoaded(false) }, [link.url])
   const tooLarge =
     link.size != null && link.size > OFFICE_ONLINE_MAX_BYTES && strategy.kind === 'office-online'
 
