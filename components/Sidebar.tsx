@@ -157,7 +157,7 @@ export function Sidebar({ classCode, className, links, selectedId, onSelect, onA
         </ul>
       </div>
 
-      <div className="p-4 border-t border-gray-800">
+      <div className="px-4 pt-4 pb-10 border-t border-gray-800">
         <h2 className="text-xs uppercase tracking-wider text-gray-500 font-semibold mb-3">Timer</h2>
         <CountdownTimer />
       </div>
