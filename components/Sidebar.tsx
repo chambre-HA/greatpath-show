@@ -1,10 +1,10 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import {
-  ArrowLeft, CheckCircle2, ChevronLeft, ChevronRight,
-  FileText, FolderOpen, Link2, Plus, Presentation,
-  Timer, Trash2, UploadCloud, XCircle,
+  ArrowLeft, CheckCircle2, ChevronDown, ChevronRight,
+  FileText, Link2, Plus, Presentation,
+  Trash2, UploadCloud, XCircle,
 } from 'lucide-react'
 import { CountdownTimer } from './CountdownTimer'
 import { makeLink, validateLinkInput } from '@/lib/links-store'
@@ -256,75 +256,22 @@ interface SidebarProps {
 }
 
 export function Sidebar({ classCode, className, links, selectedId, onSelect, onAdd, onRemove, onBack }: SidebarProps) {
-  const [collapsed, setCollapsed] = useState(false)
+  const [filesOpen, setFilesOpen] = useState(true)
   const [adding, setAdding] = useState(false)
   const [addMode, setAddMode] = useState<'link' | 'upload'>('link')
 
-  // Persist collapsed state
-  useEffect(() => {
-    const saved = window.localStorage.getItem('greatpath-show:sidebar-collapsed')
-    if (saved === 'true') setCollapsed(true)
-  }, [])
-  useEffect(() => {
-    window.localStorage.setItem('greatpath-show:sidebar-collapsed', String(collapsed))
-  }, [collapsed])
-
-  function expand() { setCollapsed(false) }
   function closeAdd() { setAdding(false) }
 
-  // ── Collapsed strip ────────────────────────────────────────────────────────
-  if (collapsed) {
-    return (
-      <aside className="w-12 shrink-0 h-screen flex flex-col items-center py-3 gap-2 bg-gray-950 border-r border-gray-800">
-        <button
-          onClick={onBack}
-          className="p-2 rounded text-gray-500 hover:text-gray-300 hover:bg-gray-800"
-          aria-label="Back"
-        >
-          <ArrowLeft size={16} />
-        </button>
-
-        <button
-          onClick={expand}
-          className="p-2 rounded text-gray-400 hover:text-white hover:bg-gray-800"
-          aria-label="Expand sidebar"
-        >
-          <ChevronRight size={16} />
-        </button>
-
-        <div className="w-6 h-px bg-gray-800 my-1" />
-
-        <button
-          onClick={expand}
-          className="relative p-2 rounded text-gray-400 hover:text-white hover:bg-gray-800"
-          aria-label={`${links.length} files`}
-          title={`${links.length} file${links.length !== 1 ? 's' : ''}`}
-        >
-          <FolderOpen size={16} />
-          {links.length > 0 && (
-            <span className="absolute -top-0.5 -right-0.5 min-w-[14px] h-3.5 px-0.5 flex items-center justify-center text-[9px] font-bold bg-gray-600 text-white rounded-full">
-              {links.length}
-            </span>
-          )}
-        </button>
-
-        <div className="flex-1" />
-
-        <button
-          onClick={expand}
-          className="p-2 rounded text-gray-500 hover:text-gray-300 hover:bg-gray-800"
-          aria-label="Timer"
-          title="Timer"
-        >
-          <Timer size={16} />
-        </button>
-      </aside>
-    )
+  function toggleFiles() {
+    setFilesOpen(o => {
+      if (o && adding) setAdding(false) // close add form when collapsing
+      return !o
+    })
   }
 
-  // ── Expanded sidebar ───────────────────────────────────────────────────────
   return (
     <aside className="w-72 shrink-0 h-screen flex flex-col bg-gray-950 border-r border-gray-800">
+      {/* Header */}
       <div className="p-4 border-b border-gray-800">
         <div className="flex items-center gap-2">
           <button
@@ -334,106 +281,115 @@ export function Sidebar({ classCode, className, links, selectedId, onSelect, onA
           >
             <ArrowLeft size={14} />
           </button>
-          <div className="flex-1 min-w-0">
+          <div className="min-w-0">
             <h1 className="text-base font-bold text-white leading-tight">共修平台</h1>
             <p className="text-[11px] text-gray-600 truncate">{className}</p>
           </div>
-          <button
-            onClick={() => setCollapsed(true)}
-            className="p-1 rounded text-gray-500 hover:text-gray-300 hover:bg-gray-800"
-            aria-label="Collapse sidebar"
-          >
-            <ChevronLeft size={14} />
-          </button>
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto">
-        <div className="px-4 py-3 flex items-center justify-between">
-          <span className="text-xs uppercase tracking-wider text-gray-500 font-semibold">
-            Files ({links.length})
-          </span>
+      {/* Files section */}
+      <div className="border-b border-gray-800">
+        {/* Files header row — click chevron or label to toggle */}
+        <div className="px-4 py-3 flex items-center gap-1.5">
           <button
-            onClick={() => adding ? closeAdd() : setAdding(true)}
-            className="p-1 rounded text-gray-400 hover:text-white hover:bg-gray-800"
-            title="Add document"
+            onClick={toggleFiles}
+            className="flex items-center gap-1.5 flex-1 min-w-0 text-left group"
           >
-            <Plus size={16} />
+            {filesOpen
+              ? <ChevronDown size={13} className="text-gray-500 shrink-0" />
+              : <ChevronRight size={13} className="text-gray-500 shrink-0" />}
+            <span className="text-xs uppercase tracking-wider text-gray-500 font-semibold group-hover:text-gray-400 transition-colors">
+              Files ({links.length})
+            </span>
           </button>
+          {filesOpen && (
+            <button
+              onClick={() => adding ? closeAdd() : setAdding(true)}
+              className="p-1 rounded text-gray-400 hover:text-white hover:bg-gray-800"
+              title="Add document"
+            >
+              <Plus size={16} />
+            </button>
+          )}
         </div>
 
-        {adding && (
-          <div className="px-4 pb-3 space-y-3">
-            <div className="flex rounded-lg bg-gray-900 p-0.5 border border-gray-800">
-              <button
-                onClick={() => setAddMode('link')}
-                className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded text-xs font-medium transition-colors ${
-                  addMode === 'link' ? 'bg-gray-700 text-white' : 'text-gray-500 hover:text-gray-300'
-                }`}
-              >
-                <Link2 size={12} /> Link
-              </button>
-              <button
-                onClick={() => setAddMode('upload')}
-                className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded text-xs font-medium transition-colors ${
-                  addMode === 'upload' ? 'bg-gray-700 text-white' : 'text-gray-500 hover:text-gray-300'
-                }`}
-              >
-                <UploadCloud size={12} /> Upload
-              </button>
-            </div>
-
-            {addMode === 'link' ? (
-              <LinkForm classCode={classCode} onAdd={onAdd} onClose={closeAdd} />
-            ) : (
-              <UploadForm classCode={classCode} onAdd={onAdd} onClose={closeAdd} />
-            )}
-          </div>
-        )}
-
-        <ul className="px-2 space-y-0.5">
-          {links.length === 0 && (
-            <li className="px-2 py-4 text-xs text-gray-500 italic text-center">No files yet.</li>
-          )}
-          {links.map(link => {
-            const active = link.id === selectedId
-            const isExternal = !link.id.startsWith('r2:')
-            const host = isExternal ? hostOf(link.url) : ''
-            const sizeMb = link.size ? Math.round(link.size / (1024 * 1024)) : null
-            return (
-              <li key={link.id}>
-                <div
-                  className={`group flex items-center gap-2 px-2 py-2 rounded cursor-pointer ${
-                    active ? 'bg-gray-800 text-white' : 'text-gray-300 hover:bg-gray-900'
-                  }`}
-                  onClick={() => onSelect(link.id)}
-                >
-                  {link.kind === 'pdf'
-                    ? <FileText size={14} className="text-red-400 shrink-0" />
-                    : <Presentation size={14} className="text-orange-400 shrink-0" />}
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm truncate">{link.title}</p>
-                    {(isExternal || sizeMb) && (
-                      <p className="text-[10px] text-gray-500 truncate flex items-center gap-1">
-                        {isExternal ? <><Link2 size={10} /> {host}</> : <>{sizeMb} MB</>}
-                      </p>
-                    )}
-                  </div>
+        {filesOpen && (
+          <>
+            {adding && (
+              <div className="px-4 pb-3 space-y-3">
+                <div className="flex rounded-lg bg-gray-900 p-0.5 border border-gray-800">
                   <button
-                    onClick={e => { e.stopPropagation(); onRemove(link.id) }}
-                    className="opacity-0 group-hover:opacity-100 p-1 rounded text-gray-500 hover:text-red-400"
-                    aria-label="Remove"
+                    onClick={() => setAddMode('link')}
+                    className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded text-xs font-medium transition-colors ${
+                      addMode === 'link' ? 'bg-gray-700 text-white' : 'text-gray-500 hover:text-gray-300'
+                    }`}
                   >
-                    <Trash2 size={12} />
+                    <Link2 size={12} /> Link
+                  </button>
+                  <button
+                    onClick={() => setAddMode('upload')}
+                    className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded text-xs font-medium transition-colors ${
+                      addMode === 'upload' ? 'bg-gray-700 text-white' : 'text-gray-500 hover:text-gray-300'
+                    }`}
+                  >
+                    <UploadCloud size={12} /> Upload
                   </button>
                 </div>
-              </li>
-            )
-          })}
-        </ul>
+                {addMode === 'link' ? (
+                  <LinkForm classCode={classCode} onAdd={onAdd} onClose={closeAdd} />
+                ) : (
+                  <UploadForm classCode={classCode} onAdd={onAdd} onClose={closeAdd} />
+                )}
+              </div>
+            )}
+
+            <ul className="px-2 pb-2 space-y-0.5 max-h-64 overflow-y-auto">
+              {links.length === 0 && (
+                <li className="px-2 py-4 text-xs text-gray-500 italic text-center">No files yet.</li>
+              )}
+              {links.map(link => {
+                const active = link.id === selectedId
+                const isExternal = !link.id.startsWith('r2:')
+                const host = isExternal ? hostOf(link.url) : ''
+                const sizeMb = link.size ? Math.round(link.size / (1024 * 1024)) : null
+                return (
+                  <li key={link.id}>
+                    <div
+                      className={`group flex items-center gap-2 px-2 py-2 rounded cursor-pointer ${
+                        active ? 'bg-gray-800 text-white' : 'text-gray-300 hover:bg-gray-900'
+                      }`}
+                      onClick={() => onSelect(link.id)}
+                    >
+                      {link.kind === 'pdf'
+                        ? <FileText size={14} className="text-red-400 shrink-0" />
+                        : <Presentation size={14} className="text-orange-400 shrink-0" />}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm truncate">{link.title}</p>
+                        {(isExternal || sizeMb) && (
+                          <p className="text-[10px] text-gray-500 truncate flex items-center gap-1">
+                            {isExternal ? <><Link2 size={10} /> {host}</> : <>{sizeMb} MB</>}
+                          </p>
+                        )}
+                      </div>
+                      <button
+                        onClick={e => { e.stopPropagation(); onRemove(link.id) }}
+                        className="opacity-0 group-hover:opacity-100 p-1 rounded text-gray-500 hover:text-red-400"
+                        aria-label="Remove"
+                      >
+                        <Trash2 size={12} />
+                      </button>
+                    </div>
+                  </li>
+                )
+              })}
+            </ul>
+          </>
+        )}
       </div>
 
-      <div className="px-4 pt-4 pb-10 border-t border-gray-800">
+      {/* Timer — always visible */}
+      <div className="flex-1 px-4 pt-4 pb-10 overflow-y-auto">
         <h2 className="text-xs uppercase tracking-wider text-gray-500 font-semibold mb-3">Timer</h2>
         <CountdownTimer />
       </div>
