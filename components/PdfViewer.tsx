@@ -36,6 +36,9 @@ export function PdfViewer({ url, r2Key }: PdfViewerProps) {
   const [containerWidth, setContainerWidth] = useState<number | undefined>(undefined)
   const [zoomIdx, setZoomIdx] = useState(DEFAULT_ZOOM_INDEX)
   const [fullscreen, setFullscreen] = useState(false)
+  const [editing, setEditing] = useState(false)
+  const [draft, setDraft] = useState('')
+  const pageInputRef = useRef<HTMLInputElement>(null)
   const pinnedPages = useRef<Map<string, number>>(new Map())
 
   const zoom = ZOOM_STEPS[zoomIdx]
@@ -61,6 +64,12 @@ export function PdfViewer({ url, r2Key }: PdfViewerProps) {
     document.addEventListener('fullscreenchange', onFs)
     return () => document.removeEventListener('fullscreenchange', onFs)
   }, [])
+
+  useEffect(() => {
+    if (editing) {
+      pageInputRef.current?.select()
+    }
+  }, [editing])
 
   const goToPage = useCallback((p: number) => {
     pinnedPages.current.set(url, p)
@@ -120,9 +129,38 @@ export function PdfViewer({ url, r2Key }: PdfViewerProps) {
             className="p-1.5 text-gray-300 hover:text-white disabled:opacity-30" aria-label="Previous page">
             <ChevronLeft size={16} />
           </button>
-          <span className="text-xs text-gray-300 tabular-nums min-w-[4rem] text-center">
-            {page} / {numPages || '–'}
-          </span>
+          {editing ? (
+            <input
+              ref={pageInputRef}
+              type="text"
+              inputMode="numeric"
+              value={draft}
+              onChange={e => setDraft(e.target.value)}
+              onKeyDown={e => {
+                if (e.key === 'Enter') {
+                  const n = parseInt(draft, 10)
+                  if (n >= 1 && n <= numPages) goToPage(n)
+                  setEditing(false)
+                } else if (e.key === 'Escape') {
+                  setEditing(false)
+                }
+              }}
+              onBlur={() => {
+                const n = parseInt(draft, 10)
+                if (n >= 1 && n <= numPages) goToPage(n)
+                setEditing(false)
+              }}
+              className="w-10 text-center text-xs text-white bg-gray-800 border border-gray-600 rounded px-1 py-0.5 outline-none focus:border-gray-400 tabular-nums"
+            />
+          ) : (
+            <button
+              onClick={() => { setDraft(String(page)); setEditing(true) }}
+              className="text-xs text-gray-300 hover:text-white tabular-nums min-w-[4rem] text-center hover:bg-gray-800 rounded px-1 py-0.5 transition-colors"
+              title="Click to jump to page"
+            >
+              {page} / {numPages || '–'}
+            </button>
+          )}
           <button onClick={next} disabled={page >= numPages}
             className="p-1.5 text-gray-300 hover:text-white disabled:opacity-30" aria-label="Next page">
             <ChevronRight size={16} />
