@@ -4,9 +4,9 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { Pause, Play, Plus, RotateCcw } from 'lucide-react'
 
 const PRESETS = [
+  { label: '3m', ms: 3 * 60_000 },
   { label: '5m', ms: 5 * 60_000 },
   { label: '10m', ms: 10 * 60_000 },
-  { label: '15m', ms: 15 * 60_000 },
   { label: '20m', ms: 20 * 60_000 },
 ]
 
