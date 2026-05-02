@@ -249,13 +249,14 @@ interface SidebarProps {
   className: string
   links: ShowLink[]
   selectedId: string | null
+  isOpen: boolean
   onSelect: (id: string) => void
   onAdd: (link: ShowLink) => Promise<void>
   onRemove: (id: string) => Promise<void>
   onBack: () => void
 }
 
-export function Sidebar({ classCode, className, links, selectedId, onSelect, onAdd, onRemove, onBack }: SidebarProps) {
+export function Sidebar({ classCode, className, links, selectedId, isOpen, onSelect, onAdd, onRemove, onBack }: SidebarProps) {
   const [filesOpen, setFilesOpen] = useState(true)
   const [adding, setAdding] = useState(false)
   const [addMode, setAddMode] = useState<'link' | 'upload'>('link')
@@ -270,9 +271,11 @@ export function Sidebar({ classCode, className, links, selectedId, onSelect, onA
   }
 
   return (
-    <aside className="w-72 shrink-0 h-screen flex flex-col bg-gray-950 border-r border-gray-800">
+    <aside className={`w-72 shrink-0 h-screen flex flex-col bg-gray-950 border-r border-gray-800 fixed md:relative z-50 transition-transform duration-300 overflow-y-auto ${
+      isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
+    }`}>
       {/* Header */}
-      <div className="p-4 border-b border-gray-800">
+      <div className="p-4 border-b border-gray-800 shrink-0">
         <div className="flex items-center gap-2">
           <button
             onClick={onBack}
@@ -289,7 +292,7 @@ export function Sidebar({ classCode, className, links, selectedId, onSelect, onA
       </div>
 
       {/* Files section */}
-      <div className="border-b border-gray-800">
+      <div className="border-b border-gray-800 shrink-0">
         {/* Files header row — click chevron or label to toggle */}
         <div className="px-4 py-3 flex items-center gap-1.5">
           <button
@@ -392,7 +395,7 @@ export function Sidebar({ classCode, className, links, selectedId, onSelect, onA
       <div className="flex-1" />
 
       {/* Timer — pinned at bottom */}
-      <div className="px-4 pt-4 pb-[50px] border-t border-gray-800">
+      <div className="px-4 pt-4 pb-[50px] border-t border-gray-800 shrink-0">
         <h2 className="text-xs uppercase tracking-wider text-gray-500 font-semibold mb-3">Timer</h2>
         <CountdownTimer />
       </div>

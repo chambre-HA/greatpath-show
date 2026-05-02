@@ -2,7 +2,7 @@
 
 import dynamic from 'next/dynamic'
 import { useRef, useState, useEffect } from 'react'
-import { AlertTriangle, ExternalLink, FileQuestion, FileText, Maximize2, Minimize2, Presentation, X } from 'lucide-react'
+import { AlertTriangle, ExternalLink, FileQuestion, FileText, Maximize2, Menu, Minimize2, Presentation, X } from 'lucide-react'
 import { getEmbedStrategy } from '@/lib/embed'
 import type { ShowLink } from '@/types'
 
@@ -19,14 +19,22 @@ interface ViewerProps {
   links: ShowLink[]
   openTabIds: string[]
   activeTabId: string | null
+  onToggleSidebar: () => void
   onActivate: (id: string) => void
   onClose: (id: string) => void
 }
 
-export function Viewer({ links, openTabIds, activeTabId, onActivate, onClose }: ViewerProps) {
+export function Viewer({ links, openTabIds, activeTabId, onToggleSidebar, onActivate, onClose }: ViewerProps) {
   if (openTabIds.length === 0) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center text-gray-500">
+      <div className="flex-1 flex flex-col items-center justify-center text-gray-500 relative">
+        <button 
+          onClick={onToggleSidebar}
+          className="absolute top-4 left-4 p-2 rounded bg-gray-800 text-gray-300 hover:text-white md:hidden z-10"
+          aria-label="Open sidebar"
+        >
+          <Menu size={20} />
+        </button>
         <FileQuestion size={48} className="mb-3 opacity-40" />
         <p className="text-sm">Select a file from the sidebar</p>
       </div>
@@ -37,6 +45,13 @@ export function Viewer({ links, openTabIds, activeTabId, onActivate, onClose }: 
     <div className="flex-1 flex flex-col bg-gray-900 min-w-0 overflow-hidden">
       {/* Tab bar */}
       <div className="flex items-end overflow-x-auto bg-gray-950 border-b border-gray-800 shrink-0 scrollbar-none">
+        <button
+          onClick={onToggleSidebar}
+          className="p-3 text-gray-400 hover:text-white md:hidden border-r border-gray-800 shrink-0"
+          aria-label="Open sidebar"
+        >
+          <Menu size={18} />
+        </button>
         {openTabIds.map(id => {
           const link = links.find(l => l.id === id)
           if (!link) return null
