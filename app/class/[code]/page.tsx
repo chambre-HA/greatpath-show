@@ -15,6 +15,7 @@ export default function ClassPage() {
   const [openTabIds, setOpenTabIds] = useState<string[]>([])
   const [activeTabId, setActiveTabId] = useState<string | null>(null)
   const [classInfo, setClassInfo] = useState<ClassInfo | null>(null)
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const initializedRef = useRef(false)
 
   const refresh = useCallback(async () => {
@@ -66,6 +67,7 @@ export default function ClassPage() {
   const handleSelect = useCallback((id: string) => {
     setOpenTabIds(prev => prev.includes(id) ? prev : [...prev, id])
     setActiveTabId(id)
+    setIsSidebarOpen(false)
   }, [])
 
   const handleCloseTab = useCallback((id: string) => {
@@ -93,12 +95,20 @@ export default function ClassPage() {
   }
 
   return (
-    <main className="flex h-screen bg-gray-900 text-gray-100 overflow-hidden">
+    <main className="flex h-screen bg-gray-900 text-gray-100 overflow-hidden relative">
+      {/* Mobile Backdrop */}
+      {isSidebarOpen && (
+        <div 
+          className="fixed inset-0 z-40 bg-black/60 md:hidden transition-opacity"
+          onClick={() => setIsSidebarOpen(false)}
+        />
+      )}
       <Sidebar
         classCode={classCode}
         className={classInfo?.name || classCode}
         links={links}
         selectedId={activeTabId}
+        isOpen={isSidebarOpen}
         onSelect={handleSelect}
         onAdd={handleAdd}
         onRemove={handleRemove}
@@ -108,6 +118,7 @@ export default function ClassPage() {
         links={links}
         openTabIds={openTabIds}
         activeTabId={activeTabId}
+        onToggleSidebar={() => setIsSidebarOpen(true)}
         onActivate={handleSelect}
         onClose={handleCloseTab}
       />
