@@ -4,6 +4,7 @@ function detectKind(url: string): ShowLink['kind'] | null {
   const haystack = decodeURIComponent(url).toLowerCase()
   if (/\.pdf(\b|$)/.test(haystack)) return 'pdf'
   if (/\.pptx?(\b|$)/.test(haystack)) return 'ppt'
+  if (/\.(mp4|webm|mov|ogv)(\?|$)/.test(haystack)) return 'video'
   if (/1drv\.ms\/p\//.test(haystack)) return 'ppt'
   if (/1drv\.ms\/b\//.test(haystack)) return 'pdf'
   if (/docs\.google\.com\/presentation\//.test(haystack)) return 'ppt'
@@ -21,7 +22,7 @@ export function validateLinkInput(url: string): { ok: true; kind: ShowLink['kind
     return { ok: false, reason: 'Not a valid URL' }
   }
   const kind = detectKind(url)
-  if (!kind) return { ok: false, reason: 'URL must reference a .pdf, .ppt, or .pptx file' }
+  if (!kind) return { ok: false, reason: 'URL must reference a .pdf, .ppt, .pptx, .mp4, or .webm file' }
   return { ok: true, kind }
 }
 
