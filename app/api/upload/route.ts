@@ -23,21 +23,22 @@ function getClient() {
   })
 }
 
-function kindFromName(name: string): 'pdf' | 'ppt' | null {
+function kindFromName(name: string): 'pdf' | 'ppt' | 'video' | null {
   const l = name.toLowerCase()
   if (l.endsWith('.pdf')) return 'pdf'
   if (l.endsWith('.pptx') || l.endsWith('.ppt')) return 'ppt'
+  if (l.endsWith('.mp4') || l.endsWith('.webm') || l.endsWith('.mov') || l.endsWith('.ogv')) return 'video'
   return null
 }
 
 function titleFromName(name: string) {
-  return name.replace(/\.(pdf|pptx?)$/i, '')
+  return name.replace(/\.(pdf|pptx?|mp4|webm|mov|ogv)$/i, '')
 }
 
-function mimeFromKind(kind: 'pdf' | 'ppt') {
-  return kind === 'pdf'
-    ? 'application/pdf'
-    : 'application/vnd.openxmlformats-officedocument.presentationml.presentation'
+function mimeFromKind(kind: 'pdf' | 'ppt' | 'video') {
+  if (kind === 'pdf') return 'application/pdf'
+  if (kind === 'video') return 'video/mp4'
+  return 'application/vnd.openxmlformats-officedocument.presentationml.presentation'
 }
 
 export async function POST(req: NextRequest) {
@@ -60,7 +61,7 @@ export async function POST(req: NextRequest) {
 
   const kind = kindFromName(file.name)
   if (!kind) {
-    return NextResponse.json({ error: 'Only PDF and PPTX files are supported' }, { status: 400 })
+    return NextResponse.json({ error: 'Only PDF, PPTX, and video files (MP4, WebM) are supported' }, { status: 400 })
   }
   if (file.size > MAX_BYTES) {
     return NextResponse.json({ error: 'too_large' }, { status: 413 })
