@@ -2,7 +2,7 @@
 
 import dynamic from 'next/dynamic'
 import { useRef, useState, useEffect } from 'react'
-import { AlertTriangle, ExternalLink, FileQuestion, FileText, Maximize2, Menu, Minimize2, Presentation, X } from 'lucide-react'
+import { AlertTriangle, ExternalLink, FileQuestion, FileText, Maximize2, Menu, Minimize2, Presentation, Video, X } from 'lucide-react'
 import { getEmbedStrategy } from '@/lib/embed'
 import type { ShowLink } from '@/types'
 
@@ -68,7 +68,9 @@ export function Viewer({ links, openTabIds, activeTabId, onToggleSidebar, onActi
             >
               {link.kind === 'pdf'
                 ? <FileText size={12} className="text-red-400 shrink-0" />
-                : <Presentation size={12} className="text-orange-400 shrink-0" />}
+                : link.kind === 'video'
+                  ? <Video size={12} className="text-blue-400 shrink-0" />
+                  : <Presentation size={12} className="text-orange-400 shrink-0" />}
               <span className="text-xs truncate flex-1 text-left">{link.title}</span>
               <span
                 role="button"
@@ -110,6 +112,8 @@ export function Viewer({ links, openTabIds, activeTabId, onToggleSidebar, onActi
               <div className="flex-1 min-h-0 relative">
                 {link.kind === 'pdf' ? (
                   <PdfViewer url={link.url} r2Key={link.r2Key} />
+                ) : link.kind === 'video' ? (
+                  <VideoViewer link={link} />
                 ) : (
                   <PptxViewer link={link} />
                 )}
@@ -118,6 +122,20 @@ export function Viewer({ links, openTabIds, activeTabId, onToggleSidebar, onActi
           )
         })}
       </div>
+    </div>
+  )
+}
+
+function VideoViewer({ link }: { link: ShowLink }) {
+  return (
+    <div className="w-full h-full flex items-center justify-center bg-black">
+      <video
+        src={link.url}
+        controls
+        className="max-w-full max-h-full"
+      >
+        Your browser does not support this video format.
+      </video>
     </div>
   )
 }
