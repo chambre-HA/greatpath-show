@@ -4,7 +4,7 @@ import { useCallback, useRef, useState } from 'react'
 import {
   ArrowLeft, CheckCircle2, ChevronDown, ChevronRight,
   FileText, Link2, Plus, Presentation,
-  Trash2, UploadCloud, XCircle,
+  Trash2, UploadCloud, Video, XCircle,
 } from 'lucide-react'
 import { CountdownTimer } from './CountdownTimer'
 import { makeLink, validateLinkInput } from '@/lib/links-store'
@@ -12,7 +12,7 @@ import type { ShowLink } from '@/types'
 
 const MAX_UPLOAD_MB = 50
 const MAX_UPLOAD_BYTES = MAX_UPLOAD_MB * 1024 * 1024
-const ACCEPT = '.pdf,.ppt,.pptx,application/pdf,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation'
+const ACCEPT = '.pdf,.ppt,.pptx,.mp4,.webm,.mov,application/pdf,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,video/mp4,video/webm,video/quicktime'
 
 function hostOf(url: string): string {
   try { return new URL(url).hostname.replace(/^www\./, '') } catch { return '' }
@@ -109,8 +109,9 @@ function UploadForm({ classCode, onAdd, onClose }: UploadFormProps) {
     setStatusMsg('')
     if (f.size > MAX_UPLOAD_BYTES) { setSizeError(true); setFile(null); return }
     const ext = f.name.toLowerCase()
-    if (!ext.endsWith('.pdf') && !ext.endsWith('.pptx') && !ext.endsWith('.ppt')) {
-      setStatusMsg('Only PDF and PPTX files are supported.')
+    if (!ext.endsWith('.pdf') && !ext.endsWith('.pptx') && !ext.endsWith('.ppt') &&
+        !ext.endsWith('.mp4') && !ext.endsWith('.webm') && !ext.endsWith('.mov')) {
+      setStatusMsg('Only PDF, PPTX, and video files (MP4, WebM) are supported.')
       setStatus('error')
       setFile(null)
       return
@@ -162,7 +163,7 @@ function UploadForm({ classCode, onAdd, onClose }: UploadFormProps) {
         <div className="rounded-lg border border-amber-800 bg-amber-950/40 p-3 space-y-1.5">
           <p className="text-xs font-medium text-amber-300">File too large for direct upload</p>
           <p className="text-[11px] text-amber-500 leading-snug">
-            Files over {MAX_UPLOAD_MB} MB must be hosted on OneDrive. Upload there, then paste the embed URL via the <strong className="text-amber-400">Link</strong> tab.
+            Files over {MAX_UPLOAD_MB} MB must be hosted externally. For videos, use a direct .mp4/.webm URL via the <strong className="text-amber-400">Link</strong> tab. For slides, use an OneDrive embed link.
           </p>
         </div>
         <button
@@ -201,7 +202,9 @@ function UploadForm({ classCode, onAdd, onClose }: UploadFormProps) {
         <div className="flex items-center gap-2 rounded-lg bg-gray-900 border border-gray-700 px-3 py-2">
           {file.name.toLowerCase().endsWith('.pdf')
             ? <FileText size={14} className="text-red-400 shrink-0" />
-            : <Presentation size={14} className="text-orange-400 shrink-0" />}
+            : /\.(mp4|webm|mov)$/i.test(file.name)
+              ? <Video size={14} className="text-blue-400 shrink-0" />
+              : <Presentation size={14} className="text-orange-400 shrink-0" />}
           <div className="flex-1 min-w-0">
             <p className="text-xs text-gray-200 truncate">{file.name}</p>
             <p className="text-[10px] text-gray-500">{fmtSize(file.size)}</p>
@@ -235,7 +238,7 @@ function UploadForm({ classCode, onAdd, onClose }: UploadFormProps) {
       >
         <UploadCloud size={20} className="text-gray-500" />
         <p className="text-xs text-gray-400">Click or drag a file here</p>
-        <p className="text-[10px] text-gray-600">PDF or PPTX · max {MAX_UPLOAD_MB} MB</p>
+        <p className="text-[10px] text-gray-600">PDF, PPTX, or video (MP4/WebM) · max {MAX_UPLOAD_MB} MB</p>
       </div>
       {status === 'error' && <p className="text-xs text-red-400">{statusMsg}</p>}
     </div>
@@ -366,7 +369,9 @@ export function Sidebar({ classCode, className, links, selectedId, isOpen, onSel
                     >
                       {link.kind === 'pdf'
                         ? <FileText size={14} className="text-red-400 shrink-0" />
-                        : <Presentation size={14} className="text-orange-400 shrink-0" />}
+                        : link.kind === 'video'
+                          ? <Video size={14} className="text-blue-400 shrink-0" />
+                          : <Presentation size={14} className="text-orange-400 shrink-0" />}
                       <div className="flex-1 min-w-0">
                         <p className="text-sm truncate">{link.title}</p>
                         {(isExternal || sizeMb) && (
