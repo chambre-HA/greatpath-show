@@ -53,7 +53,7 @@ export type SheetRow = Record<string, string>
 // Status enum
 export type Status = 'pending' | 'in_progress' | 'completed' | 'failed'
 
-export type ShowLinkKind = 'ppt' | 'pdf'
+export type ShowLinkKind = 'ppt' | 'pdf' | 'video'
 
 export type StorageMode = 'local' | 'r2'
 
