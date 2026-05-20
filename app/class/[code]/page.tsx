@@ -112,6 +112,7 @@ export default function ClassPage() {
         onSelect={handleSelect}
         onAdd={handleAdd}
         onRemove={handleRemove}
+        onRefresh={refresh}
         onBack={() => router.push('/')}
       />
       <Viewer
