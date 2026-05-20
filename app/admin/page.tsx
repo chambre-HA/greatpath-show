@@ -2,7 +2,8 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { ChevronRight, Copy, EllipsisVertical, FileText, Link2, Pencil, Presentation, Plus, RotateCcw, Save, ShieldAlert, Trash2, X, ArrowUp, ArrowDown } from 'lucide-react'
-import { cloneLink, makeLink, validateLinkInput } from '@/lib/links-store'
+import { cloneLink, validateLinkInput } from '@/lib/links-store'
+import { AddDocPanel } from '@/components/AddDocPanel'
 import type { ClassInfo, ShowLink } from '@/types'
 
 // ── API helpers ──────────────────────────────────────────────────────────────
@@ -33,8 +34,7 @@ function ClassLinks({ password, classCode, classes }: { password: string; classC
   const [links, setLinks] = useState<ShowLink[]>([])
   const [hiddenLinks, setHiddenLinks] = useState<ShowLink[]>([])
   const [loading, setLoading] = useState(true)
-  const [title, setTitle] = useState('')
-  const [url, setUrl] = useState('')
+  const [adding, setAdding] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -73,22 +73,9 @@ function ClassLinks({ password, classCode, classes }: { password: string; classC
     return () => window.removeEventListener('click', closeMenu)
   }, [contextMenu])
 
-  async function handleAdd(e: React.FormEvent) {
-    e.preventDefault()
-    setError(null)
-    const check = validateLinkInput(url)
-    if (!check.ok) { setError(check.reason); return }
-    setBusy(true)
-    try {
-      await adminPost(password, { action: 'addLink', code: classCode, link: makeLink(title, url, check.kind) })
-      setTitle('')
-      setUrl('')
-      await load()
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed')
-    } finally {
-      setBusy(false)
-    }
+  async function handleAdd(link: ShowLink) {
+    await adminPost(password, { action: 'addLink', code: classCode, link })
+    await load()
   }
 
   async function handleRemove(id: string) {
@@ -226,28 +213,21 @@ function ClassLinks({ password, classCode, classes }: { password: string; classC
     <div className="space-y-3">
       {error && <p className="text-xs text-red-400">{error}</p>}
 
-      <form onSubmit={handleAdd} className="space-y-2 p-3 rounded-lg bg-gray-900 border border-gray-800">
-        <p className="text-xs font-semibold text-gray-400">Add link</p>
-        <input
-          type="text"
-          placeholder="Title (optional)"
-          value={title}
-          onChange={e => setTitle(e.target.value)}
-          className="w-full px-2 py-1.5 text-sm rounded bg-gray-950 border border-gray-700 text-gray-100 placeholder-gray-600"
-        />
-        <input
-          type="url"
-          placeholder="https://…"
-          value={url}
-          onChange={e => setUrl(e.target.value)}
-          required
-          className="w-full px-2 py-1.5 text-sm rounded bg-gray-950 border border-gray-700 text-gray-100 placeholder-gray-600"
-        />
-        <button type="submit" disabled={busy}
-          className="w-full py-1.5 text-sm rounded bg-gray-100 text-gray-900 font-medium hover:bg-white disabled:opacity-50">
-          {busy ? 'Adding…' : 'Add'}
-        </button>
-      </form>
+      <div className="p-3 rounded-lg bg-gray-900 border border-gray-800 space-y-2">
+        <div className="flex items-center justify-between">
+          <p className="text-xs font-semibold text-gray-400">Add document</p>
+          <button
+            type="button"
+            onClick={() => setAdding(v => !v)}
+            className="p-1 rounded text-gray-500 hover:text-gray-300 hover:bg-gray-800"
+          >
+            <Plus size={14} />
+          </button>
+        </div>
+        {adding && (
+          <AddDocPanel classCode={classCode} onAdd={handleAdd} onClose={() => setAdding(false)} />
+        )}
+      </div>
 
       {links.length === 0 ? (
         <p className="text-xs text-gray-600 italic">No links yet.</p>
