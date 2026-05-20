@@ -5,10 +5,11 @@ import {
   PutObjectCommand,
   S3Client,
 } from '@aws-sdk/client-s3'
-import type { ClassInfo, ShowLink } from '@/types'
+import type { ClassInfo, MessageTemplate, ShowLink } from '@/types'
 
 const CLASSES_KEY = '_classes.json'
 const INDEX_KEY = 'links.json'
+const MESSAGES_KEY = 'messages.json'
 const CLASS_CODE_LENGTH = 8
 
 function env(name: string): string {
@@ -323,4 +324,46 @@ export async function purgeLink(classCode: string, id: string): Promise<void> {
     await client.send(new DeleteObjectCommand({ Bucket: bucket(), Key: key }))
   }
   await putJson(client, classIndexKey(classCode), compactLinkOrder(items.filter(l => l.id !== id)))
+}
+
+// ── Message templates ──────────────────────────────────────────────────────
+
+function messagesKey(classCode: string) {
+  return `${classCode}/${MESSAGES_KEY}`
+}
+
+export async function listMessages(classCode: string): Promise<MessageTemplate[]> {
+  const client = getClient()
+  const items = await getJson<MessageTemplate[]>(client, messagesKey(classCode), [])
+  return items.sort((a, b) => {
+    const oa = a.order ?? Number.MAX_SAFE_INTEGER
+    const ob = b.order ?? Number.MAX_SAFE_INTEGER
+    return oa !== ob ? oa - ob : b.addedAt.localeCompare(a.addedAt)
+  })
+}
+
+export async function addMessage(classCode: string, msg: MessageTemplate): Promise<void> {
+  const client = getClient()
+  const items = await getJson<MessageTemplate[]>(client, messagesKey(classCode), [])
+  if (items.some(m => m.id === msg.id)) return
+  items.push({ ...msg, order: items.length + 1 })
+  await putJson(client, messagesKey(classCode), items)
+}
+
+export async function updateMessage(classCode: string, msg: MessageTemplate): Promise<void> {
+  const client = getClient()
+  const items = await getJson<MessageTemplate[]>(client, messagesKey(classCode), [])
+  const idx = items.findIndex(m => m.id === msg.id)
+  if (idx >= 0) {
+    items[idx] = { ...items[idx], ...msg }
+  } else {
+    items.push({ ...msg, order: items.length + 1 })
+  }
+  await putJson(client, messagesKey(classCode), items)
+}
+
+export async function removeMessage(classCode: string, id: string): Promise<void> {
+  const client = getClient()
+  const items = await getJson<MessageTemplate[]>(client, messagesKey(classCode), [])
+  await putJson(client, messagesKey(classCode), items.filter(m => m.id !== id).map((m, i) => ({ ...m, order: i + 1 })))
 }
