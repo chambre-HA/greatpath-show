@@ -32,10 +32,10 @@ function makeTemplate(title: string, body: string, team: MessageTeam): MessageTe
 // ── Constants ─────────────────────────────────────────────────────────────────
 
 const TEAMS: { value: MessageTeam; label: string }[] = [
-  { value: 'all', label: 'All' },
-  { value: '1', label: 'Team 1' },
-  { value: '2', label: 'Team 2' },
-  { value: '3', label: 'Team 3' },
+  { value: 'all', label: '全部' },
+  { value: '1', label: '第一组' },
+  { value: '2', label: '第二组' },
+  { value: '3', label: '第三组' },
 ]
 
 const TEAM_COLORS: Record<MessageTeam, string> = {
@@ -83,21 +83,21 @@ function TemplateForm({ initial, onSave, onCancel }: TemplateFormProps) {
     <div className="rounded-xl border border-gray-700 bg-gray-900 p-4 space-y-3">
       <input
         type="text"
-        placeholder="Title (optional)"
+        placeholder="标题（选填）"
         value={title}
         onChange={e => setTitle(e.target.value)}
         className="w-full px-3 py-2 text-sm rounded-lg bg-gray-800 border border-gray-700 text-gray-100 placeholder-gray-500 focus:outline-none focus:border-gray-500"
       />
       <textarea
         ref={bodyRef}
-        placeholder="Message body…"
+        placeholder="消息内容…"
         value={body}
         onChange={e => setBody(e.target.value)}
         rows={5}
         className="w-full px-3 py-2 text-sm rounded-lg bg-gray-800 border border-gray-700 text-gray-100 placeholder-gray-500 focus:outline-none focus:border-gray-500 resize-none leading-relaxed"
       />
       <div className="flex items-center gap-2">
-        <span className="text-xs text-gray-500 shrink-0">Team:</span>
+        <span className="text-xs text-gray-500 shrink-0">小组：</span>
         <div className="flex gap-1">
           {TEAMS.map(t => (
             <button
@@ -115,14 +115,14 @@ function TemplateForm({ initial, onSave, onCancel }: TemplateFormProps) {
       </div>
       {error && <p className="text-xs text-red-400">{error}</p>}
       <div className="flex items-center justify-end gap-3">
-        <button type="button" onClick={onCancel} className="text-sm text-gray-500 hover:text-gray-300">Cancel</button>
+        <button type="button" onClick={onCancel} className="text-sm text-gray-500 hover:text-gray-300">取消</button>
         <button
           type="button"
           onClick={handleSave}
           disabled={busy || !body.trim()}
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-100 text-gray-900 text-sm font-medium hover:bg-white disabled:opacity-40"
         >
-          <Save size={13} /> {busy ? 'Saving…' : 'Save'}
+          <Save size={13} /> {busy ? '保存中…' : '保存'}
         </button>
       </div>
     </div>
@@ -168,14 +168,14 @@ function TemplateCard({ template, onEdit, onDelete }: CardProps) {
           <button
             onClick={() => onEdit(template)}
             className="p-1.5 rounded text-gray-500 hover:text-gray-300 hover:bg-gray-800"
-            title="Edit"
+            title="编辑"
           >
             <Pencil size={13} />
           </button>
           <button
             onClick={() => onDelete(template.id)}
             className="p-1.5 rounded text-gray-500 hover:text-red-400 hover:bg-gray-800"
-            title="Delete"
+            title="删除"
           >
             <Trash2 size={13} />
           </button>
@@ -192,7 +192,7 @@ function TemplateCard({ template, onEdit, onDelete }: CardProps) {
             className="flex items-center gap-1 mt-1 text-[11px] text-gray-500 hover:text-gray-400"
           >
             <ChevronDown size={12} className={`transition-transform ${expanded ? 'rotate-180' : ''}`} />
-            {expanded ? 'Show less' : 'Show more'}
+            {expanded ? '收起' : '展开'}
           </button>
         )}
       </div>
@@ -206,7 +206,7 @@ function TemplateCard({ template, onEdit, onDelete }: CardProps) {
         }`}
       >
         {copied ? <Check size={14} /> : <Copy size={14} />}
-        {copied ? 'Copied!' : 'Copy'}
+        {copied ? '已复制！' : '复制'}
       </button>
     </div>
   )
@@ -252,7 +252,7 @@ export default function MessagesPage() {
   }
 
   async function handleDelete(id: string) {
-    if (!confirm('Delete this template?')) return
+    if (!confirm('确定删除此模板？')) return
     await apiPost(classCode, { action: 'remove', id })
     await load()
   }
@@ -268,12 +268,12 @@ export default function MessagesPage() {
         <button
           onClick={() => router.push(`/class/${classCode}`)}
           className="p-1.5 rounded text-gray-500 hover:text-gray-300 hover:bg-gray-800"
-          aria-label="Back to class"
+          aria-label="返回"
         >
           <ArrowLeft size={16} />
         </button>
         <div className="flex-1 min-w-0">
-          <h1 className="text-base font-bold text-white leading-tight">Message Templates</h1>
+          <h1 className="text-base font-bold text-white leading-tight">消息模板</h1>
           <p className="text-[11px] text-gray-600 font-mono">{classCode}</p>
         </div>
         <button
@@ -283,7 +283,7 @@ export default function MessagesPage() {
           }`}
         >
           {adding ? <X size={14} /> : <Plus size={14} />}
-          {adding ? 'Cancel' : 'New'}
+          {adding ? '取消' : '新增'}
         </button>
       </header>
 
@@ -317,19 +317,19 @@ export default function MessagesPage() {
 
         {/* Content */}
         {loading && (
-          <p className="text-sm text-gray-500 text-center py-12">Loading…</p>
+          <p className="text-sm text-gray-500 text-center py-12">加载中…</p>
         )}
         {error && (
           <p className="text-sm text-red-400 text-center py-6">{error}</p>
         )}
         {!loading && !error && visible.length === 0 && (
           <div className="text-center py-16 space-y-2">
-            <p className="text-gray-500 text-sm">No templates yet.</p>
+            <p className="text-gray-500 text-sm">暂无消息模板</p>
             <button
               onClick={() => setAdding(true)}
               className="text-sm text-gray-600 hover:text-gray-400 underline underline-offset-2"
             >
-              Add the first one
+              添加第一个
             </button>
           </div>
         )}
