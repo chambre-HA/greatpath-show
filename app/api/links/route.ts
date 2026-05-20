@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { addLink, listAllLinks, removeLink, reorderLinks, updateLink } from '@/lib/r2-server'
+import { addLink, listAllLinks, listGlobalLibrary, listHiddenLinks, removeLink, reorderLinks, restoreLink, updateLink } from '@/lib/r2-server'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -9,6 +9,13 @@ export async function GET(req: Request) {
   const classCode = searchParams.get('class')
   if (!classCode) return NextResponse.json({ error: 'missing class' }, { status: 400 })
   try {
+    if (searchParams.get('library') === 'true') {
+      const [library, hidden] = await Promise.all([
+        listGlobalLibrary(classCode),
+        listHiddenLinks(classCode),
+      ])
+      return NextResponse.json({ library, hidden })
+    }
     const items = await listAllLinks(classCode)
     return NextResponse.json(items)
   } catch (e) {
@@ -37,6 +44,10 @@ export async function POST(req: Request) {
     }
     if (body.action === 'reorder' && Array.isArray(body.ids)) {
       await reorderLinks(classCode, body.ids)
+      return NextResponse.json({ ok: true })
+    }
+    if (body.action === 'restore' && typeof body.id === 'string') {
+      await restoreLink(classCode, body.id)
       return NextResponse.json({ ok: true })
     }
     return NextResponse.json({ error: 'invalid action' }, { status: 400 })
