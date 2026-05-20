@@ -235,7 +235,7 @@ function UploadForm({ classCode, onAdd, onClose }: { classCode: string; onAdd: (
 
 // ── Library panel ─────────────────────────────────────────────────────────────
 
-function LibraryPanel({ classCode, onAdd }: { classCode: string; onAdd: (link: ShowLink) => Promise<void> }) {
+function LibraryPanel({ classCode, onAdd, onRefresh }: { classCode: string; onAdd: (link: ShowLink) => Promise<void>; onRefresh?: () => Promise<void> }) {
   const [library, setLibrary] = useState<ShowLink[]>([])
   const [hidden, setHidden] = useState<ShowLink[]>([])
   const [loading, setLoading] = useState(true)
@@ -255,6 +255,7 @@ function LibraryPanel({ classCode, onAdd }: { classCode: string; onAdd: (link: S
     try {
       await getStore(classCode).restore(link.id)
       setHidden(prev => prev.filter(l => l.id !== link.id))
+      await onRefresh?.()
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed')
     } finally {
@@ -336,9 +337,10 @@ interface AddDocPanelProps {
   classCode: string
   onAdd: (link: ShowLink) => Promise<void>
   onClose: () => void
+  onRefresh?: () => Promise<void>
 }
 
-export function AddDocPanel({ classCode, onAdd, onClose }: AddDocPanelProps) {
+export function AddDocPanel({ classCode, onAdd, onClose, onRefresh }: AddDocPanelProps) {
   const [mode, setMode] = useState<'link' | 'upload' | 'library'>('link')
 
   return (
@@ -371,7 +373,7 @@ export function AddDocPanel({ classCode, onAdd, onClose }: AddDocPanelProps) {
       </div>
       {mode === 'link' && <LinkForm onAdd={onAdd} onClose={onClose} />}
       {mode === 'upload' && <UploadForm classCode={classCode} onAdd={onAdd} onClose={onClose} />}
-      {mode === 'library' && <LibraryPanel classCode={classCode} onAdd={onAdd} />}
+      {mode === 'library' && <LibraryPanel classCode={classCode} onAdd={onAdd} onRefresh={onRefresh} />}
     </div>
   )
 }
