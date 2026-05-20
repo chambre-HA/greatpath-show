@@ -47,12 +47,19 @@ export function cloneLink(link: ShowLink, overrides?: Partial<ShowLink>): ShowLi
   }
 }
 
+interface LibraryData {
+  library: ShowLink[]
+  hidden: ShowLink[]
+}
+
 interface LinkStore {
   list(): Promise<ShowLink[]>
   add(link: ShowLink): Promise<void>
   update(link: ShowLink): Promise<void>
   reorder(ids: string[]): Promise<void>
   remove(id: string): Promise<void>
+  restore(id: string): Promise<void>
+  listLibrary(): Promise<LibraryData>
 }
 
 export function getStore(classCode: string): LinkStore {
@@ -96,6 +103,19 @@ export function getStore(classCode: string): LinkStore {
         body: JSON.stringify({ action: 'reorder', class: classCode, ids }),
       })
       if (!res.ok) throw new Error(`Reorder failed: ${res.status}`)
+    },
+    async restore(id) {
+      const res = await fetch('/api/links', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'restore', class: classCode, id }),
+      })
+      if (!res.ok) throw new Error(`Restore failed: ${res.status}`)
+    },
+    async listLibrary() {
+      const res = await fetch(`/api/links?class=${encodeURIComponent(classCode)}&library=true`, { cache: 'no-store' })
+      if (!res.ok) throw new Error(`Library load failed: ${res.status}`)
+      return (await res.json()) as LibraryData
     },
   }
 }
