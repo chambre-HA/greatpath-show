@@ -205,10 +205,52 @@ export async function listAllLinks(classCode: string): Promise<ShowLink[]> {
     getStoredLinks(client, classCode),
   ])
   const indexed = new Map(index.map(link => [link.id, link]))
-  const mergedFiles = files.map(file => mergeLink(file, indexed.get(file.id)))
+  const hiddenIds = new Set(index.filter(l => l.hidden).map(l => l.id))
+  const mergedFiles = files
+    .filter(file => !hiddenIds.has(file.id))
+    .map(file => mergeLink(file, indexed.get(file.id)))
   const fileIds = new Set(files.map(f => f.id))
-  const extras = index.filter(l => !fileIds.has(l.id))
+  const extras = index.filter(l => !fileIds.has(l.id) && !l.hidden)
   return [...extras, ...mergedFiles].sort(sortLinks)
+}
+
+export async function listHiddenLinks(classCode: string): Promise<ShowLink[]> {
+  const client = getClient()
+  const [files, index] = await Promise.all([
+    listBucketFiles(client, classCode),
+    getStoredLinks(client, classCode),
+  ])
+  const indexed = new Map(index.map(link => [link.id, link]))
+  const hidden = index.filter(l => l.hidden)
+  return hidden.map(entry => {
+    if (entry.id.startsWith('r2:')) {
+      const file = files.find(f => f.id === entry.id)
+      if (file) return mergeLink(file, indexed.get(file.id))
+    }
+    return entry
+  })
+}
+
+export async function listGlobalLibrary(forClassCode: string): Promise<ShowLink[]> {
+  const client = getClient()
+  const [classes, activeLinks] = await Promise.all([
+    listClasses(),
+    listAllLinks(forClassCode),
+  ])
+  const activeUrls = new Set(activeLinks.map(l => l.url))
+  const seenUrls = new Set<string>(activeUrls)
+  const libraryLinks: ShowLink[] = []
+
+  for (const cls of classes) {
+    if (cls.code === forClassCode) continue
+    const items = await getJson<ShowLink[]>(client, classIndexKey(cls.code), [])
+    for (const link of items) {
+      if (link.hidden || seenUrls.has(link.url)) continue
+      seenUrls.add(link.url)
+      libraryLinks.push({ ...link, hidden: undefined, order: undefined })
+    }
+  }
+  return libraryLinks.sort((a, b) => b.addedAt.localeCompare(a.addedAt))
 }
 
 export async function addLink(classCode: string, link: ShowLink): Promise<void> {
@@ -247,6 +289,33 @@ export async function reorderLinks(classCode: string, ids: string[]): Promise<vo
 }
 
 export async function removeLink(classCode: string, id: string): Promise<void> {
+  const client = getClient()
+  const items = await getStoredLinks(client, classCode)
+  const existing = items.find(l => l.id === id)
+  if (existing) {
+    existing.hidden = true
+    await putJson(client, classIndexKey(classCode), items)
+  } else if (id.startsWith('r2:')) {
+    const files = await listBucketFiles(client, classCode)
+    const file = files.find(f => f.id === id)
+    if (file) {
+      items.push({ ...file, hidden: true })
+      await putJson(client, classIndexKey(classCode), items)
+    }
+  }
+}
+
+export async function restoreLink(classCode: string, id: string): Promise<void> {
+  const client = getClient()
+  const items = await getStoredLinks(client, classCode)
+  const idx = items.findIndex(l => l.id === id)
+  if (idx >= 0) {
+    items[idx] = { ...items[idx], hidden: false }
+    await putJson(client, classIndexKey(classCode), items)
+  }
+}
+
+export async function purgeLink(classCode: string, id: string): Promise<void> {
   const client = getClient()
   const items = await getStoredLinks(client, classCode)
   if (id.startsWith('r2:')) {
