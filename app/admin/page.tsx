@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import { ChevronRight, Copy, EllipsisVertical, FileText, Link2, Pencil, Presentation, Plus, Save, Trash2, X, ArrowUp, ArrowDown } from 'lucide-react'
+import { ChevronRight, Copy, EllipsisVertical, FileText, Link2, Pencil, Presentation, Plus, RotateCcw, Save, ShieldAlert, Trash2, X, ArrowUp, ArrowDown } from 'lucide-react'
 import { cloneLink, makeLink, validateLinkInput } from '@/lib/links-store'
 import type { ClassInfo, ShowLink } from '@/types'
 
@@ -31,6 +31,7 @@ type ContextMenuState = { id: string; x: number; y: number } | null
 
 function ClassLinks({ password, classCode, classes }: { password: string; classCode: string; classes: ClassInfo[] }) {
   const [links, setLinks] = useState<ShowLink[]>([])
+  const [hiddenLinks, setHiddenLinks] = useState<ShowLink[]>([])
   const [loading, setLoading] = useState(true)
   const [title, setTitle] = useState('')
   const [url, setUrl] = useState('')
@@ -42,12 +43,17 @@ function ClassLinks({ password, classCode, classes }: { password: string; classC
   const [contextMenu, setContextMenu] = useState<ContextMenuState>(null)
   const [copyingLink, setCopyingLink] = useState<ShowLink | null>(null)
   const [copyTargetCode, setCopyTargetCode] = useState('')
+  const [showHidden, setShowHidden] = useState(false)
 
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      const data = await adminPost(password, { action: 'listLinks', code: classCode })
-      setLinks(Array.isArray(data) ? data : [])
+      const [active, hidden] = await Promise.all([
+        adminPost(password, { action: 'listLinks', code: classCode }),
+        adminPost(password, { action: 'listHiddenLinks', code: classCode }),
+      ])
+      setLinks(Array.isArray(active) ? active : [])
+      setHiddenLinks(Array.isArray(hidden) ? hidden : [])
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed')
     } finally {
@@ -89,6 +95,25 @@ function ClassLinks({ password, classCode, classes }: { password: string; classC
     setContextMenu(null)
     try {
       await adminPost(password, { action: 'removeLink', code: classCode, id })
+      await load()
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed')
+    }
+  }
+
+  async function handleRestore(id: string) {
+    try {
+      await adminPost(password, { action: 'restoreLink', code: classCode, id })
+      await load()
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed')
+    }
+  }
+
+  async function handlePurge(id: string) {
+    if (!confirm('Permanently delete this file from storage? This cannot be undone.')) return
+    try {
+      await adminPost(password, { action: 'purgeLink', code: classCode, id })
       await load()
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed')
@@ -340,11 +365,52 @@ function ClassLinks({ password, classCode, classes }: { password: string; classC
             <button type="button" onClick={() => openCopyDialog(menuLink)} disabled={copyTargets.length === 0} className="w-full px-3 py-2 text-left text-sm text-gray-200 hover:bg-gray-900 disabled:opacity-30 flex items-center gap-2">
               <Copy size={12} /> Copy to class
             </button>
-            <button type="button" onClick={() => handleRemove(menuLink.id)} className="w-full px-3 py-2 text-left text-sm text-red-400 hover:bg-gray-900 flex items-center gap-2">
-              <Trash2 size={12} /> Delete
+            <button type="button" onClick={() => handleRemove(menuLink.id)} className="w-full px-3 py-2 text-left text-sm text-amber-400 hover:bg-gray-900 flex items-center gap-2">
+              <Trash2 size={12} /> Hide
             </button>
           </div>
         )}
+        </div>
+      )}
+
+      {hiddenLinks.length > 0 && (
+        <div className="space-y-2">
+          <button
+            type="button"
+            onClick={() => setShowHidden(v => !v)}
+            className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-300"
+          >
+            <ShieldAlert size={12} />
+            {showHidden ? 'Hide' : 'Show'} hidden ({hiddenLinks.length})
+          </button>
+          {showHidden && (
+            <ul className="space-y-1">
+              {hiddenLinks.map(link => (
+                <li key={link.id} className="flex items-center gap-2 px-2 py-2 rounded bg-gray-900 border border-gray-800/60">
+                  {link.kind === 'pdf'
+                    ? <FileText size={13} className="text-red-400/50 shrink-0" />
+                    : <Presentation size={13} className="text-orange-400/50 shrink-0" />}
+                  <span className="flex-1 min-w-0 text-sm text-gray-500 truncate">{link.title}</span>
+                  <button
+                    type="button"
+                    onClick={() => handleRestore(link.id)}
+                    className="p-1.5 rounded text-gray-500 hover:text-emerald-400 hover:bg-gray-800"
+                    title="Restore"
+                  >
+                    <RotateCcw size={11} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handlePurge(link.id)}
+                    className="p-1.5 rounded text-gray-600 hover:text-red-400 hover:bg-gray-800"
+                    title="Permanently delete"
+                  >
+                    <Trash2 size={11} />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
       )}
 
