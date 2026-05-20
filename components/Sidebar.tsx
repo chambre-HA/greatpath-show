@@ -51,14 +51,21 @@ export function Sidebar({ classCode, className, links, selectedId, isOpen, onSel
           <button
             onClick={onBack}
             className="p-1 rounded text-gray-500 hover:text-gray-300 hover:bg-gray-800"
-            aria-label="Back"
+            aria-label="返回"
           >
             <ArrowLeft size={14} />
           </button>
-          <div className="min-w-0">
+          <div className="flex-1 min-w-0">
             <h1 className="text-base font-bold text-white leading-tight">共修平台</h1>
             <p className="text-[11px] text-gray-600 truncate">{className}</p>
           </div>
+          <a
+            href={`/class/${classCode}/messages`}
+            className="p-2 rounded-lg text-gray-500 hover:text-white hover:bg-gray-800 transition-colors"
+            title="消息模板"
+          >
+            <MessageSquare size={16} />
+          </a>
         </div>
       </div>
 
@@ -143,17 +150,6 @@ export function Sidebar({ classCode, className, links, selectedId, isOpen, onSel
 
       {/* Spacer */}
       <div className="flex-1" />
-
-      {/* Messages link */}
-      <div className="px-4 py-3 border-t border-gray-800 shrink-0">
-        <a
-          href={`/class/${classCode}/messages`}
-          className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-gray-400 hover:text-white hover:bg-gray-800 transition-colors"
-        >
-          <MessageSquare size={14} className="shrink-0" />
-          Message Templates
-        </a>
-      </div>
 
       {/* Timer — pinned at bottom */}
       <div className="px-4 pt-4 pb-[50px] border-t border-gray-800 shrink-0">
