@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import {
   ArrowLeft, ChevronDown, ChevronRight,
-  FileText, Link2, Plus, Presentation, Trash2, Video,
+  FileText, Link2, MessageSquare, Plus, Presentation, Trash2, Video,
 } from 'lucide-react'
 import { CountdownTimer } from './CountdownTimer'
 import { AddDocPanel } from './AddDocPanel'
@@ -24,10 +24,11 @@ interface SidebarProps {
   onSelect: (id: string) => void
   onAdd: (link: ShowLink) => Promise<void>
   onRemove: (id: string) => Promise<void>
+  onRefresh: () => Promise<void>
   onBack: () => void
 }
 
-export function Sidebar({ classCode, className, links, selectedId, isOpen, onSelect, onAdd, onRemove, onBack }: SidebarProps) {
+export function Sidebar({ classCode, className, links, selectedId, isOpen, onSelect, onAdd, onRemove, onRefresh, onBack }: SidebarProps) {
   const [filesOpen, setFilesOpen] = useState(true)
   const [adding, setAdding] = useState(false)
 
@@ -90,7 +91,7 @@ export function Sidebar({ classCode, className, links, selectedId, isOpen, onSel
           <>
             {adding && (
               <div className="px-4 pb-3">
-                <AddDocPanel classCode={classCode} onAdd={onAdd} onClose={closeAdd} />
+                <AddDocPanel classCode={classCode} onAdd={onAdd} onClose={closeAdd} onRefresh={onRefresh} />
               </div>
             )}
 
@@ -142,6 +143,17 @@ export function Sidebar({ classCode, className, links, selectedId, isOpen, onSel
 
       {/* Spacer */}
       <div className="flex-1" />
+
+      {/* Messages link */}
+      <div className="px-4 py-3 border-t border-gray-800 shrink-0">
+        <a
+          href={`/class/${classCode}/messages`}
+          className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-gray-400 hover:text-white hover:bg-gray-800 transition-colors"
+        >
+          <MessageSquare size={14} className="shrink-0" />
+          Message Templates
+        </a>
+      </div>
 
       {/* Timer — pinned at bottom */}
       <div className="px-4 pt-4 pb-[50px] border-t border-gray-800 shrink-0">
