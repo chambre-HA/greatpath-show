@@ -1,13 +1,13 @@
 'use client'
 
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   ArrowLeft, CheckCircle2, ChevronDown, ChevronRight,
-  FileText, Link2, Plus, Presentation,
-  Trash2, UploadCloud, Video, XCircle,
+  FileText, History, Link2, Plus, Presentation,
+  RotateCcw, Trash2, UploadCloud, Video, XCircle,
 } from 'lucide-react'
 import { CountdownTimer } from './CountdownTimer'
-import { makeLink, validateLinkInput } from '@/lib/links-store'
+import { cloneLink, makeLink, validateLinkInput, getStore } from '@/lib/links-store'
 import type { ShowLink } from '@/types'
 
 const MAX_UPLOAD_MB = 50
@@ -245,6 +245,117 @@ function UploadForm({ classCode, onAdd, onClose }: UploadFormProps) {
   )
 }
 
+// ── Library panel ────────────────────────────────────────────────────────────
+
+interface LibraryPanelProps {
+  classCode: string
+  onAdd: (link: ShowLink) => Promise<void>
+  onClose: () => void
+}
+
+function LibraryPanel({ classCode, onAdd, onClose }: LibraryPanelProps) {
+  const [library, setLibrary] = useState<ShowLink[]>([])
+  const [hidden, setHidden] = useState<ShowLink[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [busy, setBusy] = useState<string | null>(null)
+
+  useEffect(() => {
+    setLoading(true)
+    getStore(classCode).listLibrary()
+      .then(data => { setLibrary(data.library); setHidden(data.hidden) })
+      .catch(e => setError(e instanceof Error ? e.message : 'Failed'))
+      .finally(() => setLoading(false))
+  }, [classCode])
+
+  async function handleRestore(link: ShowLink) {
+    setBusy(link.id)
+    try {
+      await getStore(classCode).restore(link.id)
+      setHidden(prev => prev.filter(l => l.id !== link.id))
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed')
+    } finally {
+      setBusy(null)
+    }
+  }
+
+  async function handleAdd(link: ShowLink) {
+    setBusy(link.id)
+    try {
+      await onAdd(cloneLink(link))
+      setLibrary(prev => prev.filter(l => l.id !== link.id))
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed')
+    } finally {
+      setBusy(null)
+    }
+  }
+
+  if (loading) return <p className="text-xs text-gray-500 py-2">Loading library…</p>
+
+  const isEmpty = hidden.length === 0 && library.length === 0
+
+  function LinkIcon({ kind }: { kind: ShowLink['kind'] }) {
+    if (kind === 'pdf') return <FileText size={13} className="text-red-400 shrink-0" />
+    if (kind === 'video') return <Video size={13} className="text-blue-400 shrink-0" />
+    return <Presentation size={13} className="text-orange-400 shrink-0" />
+  }
+
+  return (
+    <div className="space-y-3">
+      {error && <p className="text-xs text-red-400">{error}</p>}
+      {isEmpty && (
+        <p className="text-xs text-gray-600 italic py-1">No links available in library.</p>
+      )}
+
+      {hidden.length > 0 && (
+        <div>
+          <p className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold mb-1.5">Recently removed</p>
+          <ul className="space-y-1">
+            {hidden.map(link => (
+              <li key={link.id} className="flex items-center gap-2 px-2 py-1.5 rounded bg-gray-900">
+                <LinkIcon kind={link.kind} />
+                <span className="flex-1 min-w-0 text-xs text-gray-300 truncate">{link.title}</span>
+                <button
+                  onClick={() => handleRestore(link)}
+                  disabled={busy === link.id}
+                  className="p-1 rounded text-gray-500 hover:text-emerald-400 hover:bg-gray-800 disabled:opacity-30"
+                  title="Restore to this class"
+                >
+                  <RotateCcw size={12} />
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {library.length > 0 && (
+        <div>
+          <p className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold mb-1.5">From other classes</p>
+          <ul className="space-y-1">
+            {library.map(link => (
+              <li key={link.id} className="flex items-center gap-2 px-2 py-1.5 rounded bg-gray-900">
+                <LinkIcon kind={link.kind} />
+                <span className="flex-1 min-w-0 text-xs text-gray-300 truncate">{link.title}</span>
+                <button
+                  onClick={() => handleAdd(link)}
+                  disabled={busy === link.id}
+                  className="p-1 rounded text-gray-500 hover:text-sky-400 hover:bg-gray-800 disabled:opacity-30"
+                  title="Add to this class"
+                >
+                  <Plus size={12} />
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ── Sidebar ──────────────────────────────────────────────────────────────────
 
 interface SidebarProps {
@@ -262,7 +373,7 @@ interface SidebarProps {
 export function Sidebar({ classCode, className, links, selectedId, isOpen, onSelect, onAdd, onRemove, onBack }: SidebarProps) {
   const [filesOpen, setFilesOpen] = useState(true)
   const [adding, setAdding] = useState(false)
-  const [addMode, setAddMode] = useState<'link' | 'upload'>('link')
+  const [addMode, setAddMode] = useState<'link' | 'upload' | 'library'>('link')
 
   function closeAdd() { setAdding(false) }
 
@@ -341,11 +452,21 @@ export function Sidebar({ classCode, className, links, selectedId, isOpen, onSel
                   >
                     <UploadCloud size={12} /> Upload
                   </button>
+                  <button
+                    onClick={() => setAddMode('library')}
+                    className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded text-xs font-medium transition-colors ${
+                      addMode === 'library' ? 'bg-gray-700 text-white' : 'text-gray-500 hover:text-gray-300'
+                    }`}
+                  >
+                    <History size={12} /> Library
+                  </button>
                 </div>
                 {addMode === 'link' ? (
                   <LinkForm classCode={classCode} onAdd={onAdd} onClose={closeAdd} />
-                ) : (
+                ) : addMode === 'upload' ? (
                   <UploadForm classCode={classCode} onAdd={onAdd} onClose={closeAdd} />
+                ) : (
+                  <LibraryPanel classCode={classCode} onAdd={onAdd} onClose={closeAdd} />
                 )}
               </div>
             )}
