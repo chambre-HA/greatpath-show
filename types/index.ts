@@ -72,4 +72,5 @@ export interface ShowLink {
   order?: number
   size?: number
   r2Key?: string
+  hidden?: boolean
 }
