@@ -63,6 +63,17 @@ export interface ClassInfo {
   createdAt: string
 }
 
+export type MessageTeam = 'all' | '1' | '2' | '3'
+
+export interface MessageTemplate {
+  id: string
+  title: string
+  body: string
+  team: MessageTeam
+  addedAt: string
+  order?: number
+}
+
 export interface ShowLink {
   id: string
   title: string
