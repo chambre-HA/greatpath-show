@@ -5,11 +5,12 @@ import {
   PutObjectCommand,
   S3Client,
 } from '@aws-sdk/client-s3'
-import type { ClassInfo, MessageTemplate, ShowLink } from '@/types'
+import type { ClassInfo, DedicationGroup, DedicationPerson, MessageTemplate, ShowLink } from '@/types'
 
 const CLASSES_KEY = '_classes.json'
 const INDEX_KEY = 'links.json'
 const MESSAGES_KEY = 'messages.json'
+const DEDICATION_KEY = 'dedication.json'
 const CLASS_CODE_LENGTH = 8
 
 function env(name: string): string {
@@ -138,6 +139,7 @@ export async function addClass(info: ClassInfo): Promise<void> {
   if (!classes.some(c => c.code === next.code)) {
     classes.push(next)
     await putJson(client, CLASSES_KEY, classes)
+    await seedDefaultDedicationGroups(next.code)
   }
 }
 
@@ -366,4 +368,100 @@ export async function removeMessage(classCode: string, id: string): Promise<void
   const client = getClient()
   const items = await getJson<MessageTemplate[]>(client, messagesKey(classCode), [])
   await putJson(client, messagesKey(classCode), items.filter(m => m.id !== id).map((m, i) => ({ ...m, order: i + 1 })))
+}
+
+// ── Dedication (回向) list ──────────────────────────────────────────────────
+// Each group is one shared purpose/wish (e.g. "早日康复，病障远离") covering a set
+// of people; people can be individually paused for the upcoming week.
+
+const DEFAULT_DEDICATION_PURPOSES = [
+  '早日康复，病障远离',
+  '消灾解难，逢凶化吉',
+  '学业进步，考试顺利',
+]
+
+function dedicationKey(classCode: string) {
+  return `${classCode}/${DEDICATION_KEY}`
+}
+
+export async function seedDefaultDedicationGroups(classCode: string): Promise<void> {
+  const client = getClient()
+  const groups: DedicationGroup[] = DEFAULT_DEDICATION_PURPOSES.map((purpose, index) => ({
+    id: crypto.randomUUID(),
+    purpose,
+    people: [],
+    addedAt: new Date().toISOString(),
+    order: index + 1,
+  }))
+  await putJson(client, dedicationKey(classCode), groups)
+}
+
+function sortDedicationGroups(groups: DedicationGroup[]): DedicationGroup[] {
+  return [...groups].sort((a, b) => {
+    const oa = a.order ?? Number.MAX_SAFE_INTEGER
+    const ob = b.order ?? Number.MAX_SAFE_INTEGER
+    return oa !== ob ? oa - ob : a.addedAt.localeCompare(b.addedAt)
+  })
+}
+
+async function getDedicationGroups(client: S3Client, classCode: string): Promise<DedicationGroup[]> {
+  return getJson<DedicationGroup[]>(client, dedicationKey(classCode), [])
+}
+
+export async function listDedicationGroups(classCode: string): Promise<DedicationGroup[]> {
+  const client = getClient()
+  return sortDedicationGroups(await getDedicationGroups(client, classCode))
+}
+
+export async function addDedicationGroup(classCode: string, group: DedicationGroup): Promise<void> {
+  const client = getClient()
+  const items = await getDedicationGroups(client, classCode)
+  if (items.some(g => g.id === group.id)) return
+  items.push({ ...group, order: items.length + 1 })
+  await putJson(client, dedicationKey(classCode), items)
+}
+
+export async function updateDedicationGroupPurpose(classCode: string, groupId: string, purpose: string): Promise<void> {
+  const client = getClient()
+  const items = await getDedicationGroups(client, classCode)
+  const idx = items.findIndex(g => g.id === groupId)
+  if (idx >= 0) {
+    items[idx] = { ...items[idx], purpose, updatedAt: new Date().toISOString() }
+    await putJson(client, dedicationKey(classCode), items)
+  }
+}
+
+export async function removeDedicationGroup(classCode: string, groupId: string): Promise<void> {
+  const client = getClient()
+  const items = await getDedicationGroups(client, classCode)
+  await putJson(client, dedicationKey(classCode), items.filter(g => g.id !== groupId))
+}
+
+export async function addDedicationPerson(classCode: string, groupId: string, person: DedicationPerson): Promise<void> {
+  const client = getClient()
+  const items = await getDedicationGroups(client, classCode)
+  const idx = items.findIndex(g => g.id === groupId)
+  if (idx < 0) return
+  if (items[idx].people.some(p => p.id === person.id)) return
+  items[idx] = { ...items[idx], people: [...items[idx].people, person] }
+  await putJson(client, dedicationKey(classCode), items)
+}
+
+export async function removeDedicationPerson(classCode: string, groupId: string, personId: string): Promise<void> {
+  const client = getClient()
+  const items = await getDedicationGroups(client, classCode)
+  const idx = items.findIndex(g => g.id === groupId)
+  if (idx < 0) return
+  items[idx] = { ...items[idx], people: items[idx].people.filter(p => p.id !== personId) }
+  await putJson(client, dedicationKey(classCode), items)
+}
+
+export async function setDedicationPersonPaused(classCode: string, groupId: string, personId: string, paused: boolean): Promise<void> {
+  const client = getClient()
+  const items = await getDedicationGroups(client, classCode)
+  const idx = items.findIndex(g => g.id === groupId)
+  if (idx < 0) return
+  const people = items[idx].people.map(p => p.id === personId ? { ...p, paused, updatedAt: new Date().toISOString() } : p)
+  items[idx] = { ...items[idx], people }
+  await putJson(client, dedicationKey(classCode), items)
 }
