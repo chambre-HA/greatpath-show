@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import {
-  ArrowLeft, Check, ChevronDown, Copy, Pencil, Plus,
+  ArrowLeft, Check, ChevronDown, Copy, HeartHandshake, Pencil, Plus,
   Save, Trash2, X,
 } from 'lucide-react'
 import type { MessageTeam, MessageTemplate } from '@/types'
@@ -276,6 +276,13 @@ export default function MessagesPage() {
           <h1 className="text-base font-bold text-white leading-tight">消息模板</h1>
           <p className="text-[11px] text-gray-600 font-mono">{classCode}</p>
         </div>
+        <a
+          href={`/class/${classCode}/dedication`}
+          className="p-1.5 rounded text-gray-500 hover:text-gray-300 hover:bg-gray-800"
+          title="回向名单"
+        >
+          <HeartHandshake size={16} />
+        </a>
         <button
           onClick={() => { setAdding(v => !v); setEditingTemplate(null) }}
           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
