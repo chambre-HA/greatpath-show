@@ -74,6 +74,24 @@ export interface MessageTemplate {
   order?: number
 }
 
+export interface DedicationPerson {
+  id: string
+  name: string
+  paused: boolean
+  addedAt: string
+  updatedAt?: string
+  source: 'leader' | 'self'
+}
+
+export interface DedicationGroup {
+  id: string
+  purpose: string
+  people: DedicationPerson[]
+  addedAt: string
+  updatedAt?: string
+  order?: number
+}
+
 export interface ShowLink {
   id: string
   title: string
