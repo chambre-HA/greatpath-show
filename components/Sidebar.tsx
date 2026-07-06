@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import {
   ArrowLeft, ChevronDown, ChevronRight,
-  FileText, Link2, MessageSquare, Plus, Presentation, Trash2, Video,
+  FileText, HeartHandshake, Link2, MessageSquare, Plus, Presentation, Trash2, Video,
 } from 'lucide-react'
 import { CountdownTimer } from './CountdownTimer'
 import { AddDocPanel } from './AddDocPanel'
@@ -50,10 +50,10 @@ export function Sidebar({ classCode, className, links, selectedId, isOpen, onSel
         <div className="flex items-center gap-2">
           <button
             onClick={onBack}
-            className="p-1 rounded text-gray-500 hover:text-gray-300 hover:bg-gray-800"
+            className="p-1.5 rounded text-gray-500 hover:text-gray-300 hover:bg-gray-800"
             aria-label="返回"
           >
-            <ArrowLeft size={14} />
+            <ArrowLeft size={16} />
           </button>
           <div className="flex-1 min-w-0">
             <h1 className="text-base font-bold text-white leading-tight">共修平台</h1>
@@ -61,10 +61,17 @@ export function Sidebar({ classCode, className, links, selectedId, isOpen, onSel
           </div>
           <a
             href={`/class/${classCode}/messages`}
-            className="p-2 rounded-lg text-gray-500 hover:text-white hover:bg-gray-800 transition-colors"
+            className="p-1.5 rounded text-gray-500 hover:text-gray-300 hover:bg-gray-800"
             title="消息模板"
           >
             <MessageSquare size={16} />
+          </a>
+          <a
+            href={`/class/${classCode}/dedication`}
+            className="p-1.5 rounded text-gray-500 hover:text-gray-300 hover:bg-gray-800"
+            title="回向名单"
+          >
+            <HeartHandshake size={16} />
           </a>
         </div>
       </div>
