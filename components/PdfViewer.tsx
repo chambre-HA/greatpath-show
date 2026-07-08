@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { ChevronLeft, ChevronRight, Maximize2, Minimize2, ZoomIn, ZoomOut } from 'lucide-react'
 import { Document, Page, pdfjs } from 'react-pdf'
+import 'react-pdf/dist/Page/TextLayer.css'
 
 pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`
 
@@ -117,7 +118,7 @@ export function PdfViewer({ url, r2Key }: PdfViewerProps) {
           <Page
             pageNumber={page}
             width={pageWidth}
-            renderTextLayer={false}
+            renderTextLayer={true}
             renderAnnotationLayer={false}
           />
         </Document>
