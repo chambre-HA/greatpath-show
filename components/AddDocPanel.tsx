@@ -8,7 +8,7 @@ import {
 import { cloneLink, getStore, makeLink, validateLinkInput } from '@/lib/links-store'
 import type { ShowLink } from '@/types'
 
-const MAX_UPLOAD_MB = 50
+const MAX_UPLOAD_MB = 500
 const MAX_UPLOAD_BYTES = MAX_UPLOAD_MB * 1024 * 1024
 const ACCEPT = '.pdf,.ppt,.pptx,.mp4,.webm,.mov,application/pdf,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,video/mp4,video/webm,video/quicktime'
 
@@ -90,6 +90,7 @@ function UploadForm({ classCode, onAdd, onClose }: { classCode: string; onAdd: (
   const [status, setStatus] = useState<UploadStatus>('idle')
   const [statusMsg, setStatusMsg] = useState('')
   const [sizeError, setSizeError] = useState(false)
+  const [progress, setProgress] = useState(0)
 
   const pickFile = useCallback((f: File) => {
     setSizeError(false)
@@ -120,21 +121,45 @@ function UploadForm({ classCode, onAdd, onClose }: { classCode: string; onAdd: (
     if (f) pickFile(f)
   }
 
+  function putWithProgress(url: string, body: File, contentType: string): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest()
+      xhr.open('PUT', url)
+      xhr.setRequestHeader('Content-Type', contentType)
+      xhr.upload.onprogress = e => {
+        if (e.lengthComputable) setProgress(Math.round((e.loaded / e.total) * 100))
+      }
+      xhr.onload = () => {
+        if (xhr.status >= 200 && xhr.status < 300) resolve()
+        else reject(new Error(`Upload failed (${xhr.status})`))
+      }
+      xhr.onerror = () => reject(new Error('Upload failed'))
+      xhr.send(body)
+    })
+  }
+
   const handleUpload = async () => {
     if (!file) return
     setStatus('uploading')
     setStatusMsg('')
+    setProgress(0)
     try {
-      const fd = new FormData()
-      fd.append('file', file)
-      fd.append('classCode', classCode)
-      const res = await fetch('/api/upload', { method: 'POST', body: fd })
-      if (res.status === 413) { setSizeError(true); setFile(null); setStatus('idle'); return }
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}))
-        throw new Error(data.error || `Upload failed (${res.status})`)
+      const presignRes = await fetch('/api/upload/presign', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ classCode, filename: file.name, size: file.size, contentType: file.type }),
+      })
+      if (presignRes.status === 413) { setSizeError(true); setFile(null); setStatus('idle'); return }
+      if (!presignRes.ok) {
+        const data = await presignRes.json().catch(() => ({}))
+        throw new Error(data.error || `Upload failed (${presignRes.status})`)
       }
-      const { existed, link } = await res.json()
+      const { existed, uploadUrl, contentType, link } = await presignRes.json()
+
+      if (!existed) {
+        await putWithProgress(uploadUrl, file, contentType)
+      }
+
       await onAdd(link)
       setStatus('done')
       setStatusMsg(existed ? 'Already in library — linked!' : 'Uploaded and added!')
@@ -149,9 +174,9 @@ function UploadForm({ classCode, onAdd, onClose }: { classCode: string; onAdd: (
     return (
       <div className="space-y-2">
         <div className="rounded-lg border border-amber-800 bg-amber-950/40 p-3 space-y-1.5">
-          <p className="text-xs font-medium text-amber-300">File too large for direct upload</p>
+          <p className="text-xs font-medium text-amber-300">File too large</p>
           <p className="text-[11px] text-amber-500 leading-snug">
-            Files over {MAX_UPLOAD_MB} MB must be hosted externally. For videos, use a direct .mp4/.webm URL via the <strong className="text-amber-400">Link</strong> tab. For slides, use an OneDrive embed link.
+            Files over {MAX_UPLOAD_MB} MB aren&apos;t supported. For videos, use a direct .mp4/.webm URL via the <strong className="text-amber-400">Link</strong> tab. For slides, use an OneDrive embed link.
           </p>
         </div>
         <button
@@ -175,11 +200,16 @@ function UploadForm({ classCode, onAdd, onClose }: { classCode: string; onAdd: (
 
   if (status === 'uploading') {
     return (
-      <div className="flex items-center gap-2.5 py-3 px-2 text-gray-400 text-sm">
-        <svg className="animate-spin shrink-0" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <path d="M21 12a9 9 0 1 1-6.219-8.56" />
-        </svg>
-        Uploading {file?.name}…
+      <div className="space-y-1.5 py-3 px-2">
+        <div className="flex items-center gap-2.5 text-gray-400 text-sm">
+          <svg className="animate-spin shrink-0" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+          </svg>
+          Uploading {file?.name}… {progress > 0 ? `${progress}%` : ''}
+        </div>
+        <div className="h-1 rounded-full bg-gray-800 overflow-hidden">
+          <div className="h-full bg-gray-300 transition-all" style={{ width: `${progress}%` }} />
+        </div>
       </div>
     )
   }

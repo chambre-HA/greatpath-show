@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { HeadObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3'
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
-const MAX_BYTES = 50 * 1024 * 1024
+const MAX_BYTES = 500 * 1024 * 1024
 
 function env(name: string) {
   const v = process.env[name]
@@ -42,35 +43,34 @@ function mimeFromKind(kind: 'pdf' | 'ppt' | 'video') {
 }
 
 export async function POST(req: NextRequest) {
-  let formData: FormData
+  let body: { classCode?: string; filename?: string; size?: number; contentType?: string }
   try {
-    formData = await req.formData()
+    body = await req.json()
   } catch {
-    return NextResponse.json({ error: 'Invalid form data' }, { status: 400 })
+    return NextResponse.json({ error: 'Invalid request body' }, { status: 400 })
   }
 
-  const file = formData.get('file') as File | null
-  const classCode = formData.get('classCode') as string | null
-
-  if (!file || !classCode) {
-    return NextResponse.json({ error: 'Missing file or classCode' }, { status: 400 })
+  const { classCode, filename, size } = body
+  if (!classCode || !filename || typeof size !== 'number') {
+    return NextResponse.json({ error: 'Missing classCode, filename, or size' }, { status: 400 })
   }
   if (!/^\d{8}$/.test(classCode)) {
     return NextResponse.json({ error: 'Invalid class code' }, { status: 400 })
   }
 
-  const kind = kindFromName(file.name)
+  const kind = kindFromName(filename)
   if (!kind) {
     return NextResponse.json({ error: 'Only PDF, PPTX, and video files (MP4, WebM) are supported' }, { status: 400 })
   }
-  if (file.size > MAX_BYTES) {
+  if (size > MAX_BYTES) {
     return NextResponse.json({ error: 'too_large' }, { status: 413 })
   }
 
   const bucket = env('R2_BUCKET')
   const publicBase = (process.env.R2_PUBLIC_URL || '').replace(/\/$/, '')
   const client = getClient()
-  const key = `${classCode}/${file.name}`
+  const key = `${classCode}/${filename}`
+  const contentType = body.contentType || mimeFromKind(kind)
 
   let existed = false
   let existingSize: number | undefined
@@ -84,25 +84,25 @@ export async function POST(req: NextRequest) {
     if (status !== 404 && name !== 'NotFound') throw e
   }
 
-  if (!existed) {
-    const bytes = await file.arrayBuffer()
-    await client.send(new PutObjectCommand({
-      Bucket: bucket,
-      Key: key,
-      Body: Buffer.from(bytes),
-      ContentType: file.type || mimeFromKind(kind),
-    }))
-  }
+  const uploadUrl = existed
+    ? null
+    : await getSignedUrl(
+        client,
+        new PutObjectCommand({ Bucket: bucket, Key: key, ContentType: contentType }),
+        { expiresIn: 600 },
+      )
 
   return NextResponse.json({
     existed,
+    uploadUrl,
+    contentType,
     link: {
       id: `r2:${key}`,
-      title: titleFromName(file.name),
+      title: titleFromName(filename),
       url: `${publicBase}/${encodeURI(key)}`,
       kind,
       r2Key: key,
-      size: existed ? existingSize : file.size,
+      size: existed ? existingSize : size,
       addedAt: new Date().toISOString(),
     },
   })

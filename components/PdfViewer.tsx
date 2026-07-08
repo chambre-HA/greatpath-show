@@ -124,7 +124,7 @@ export function PdfViewer({ url, r2Key }: PdfViewerProps) {
         </Document>
       </div>
 
-      <div className="sticky bottom-4 flex justify-center pointer-events-none">
+      <div className="sticky bottom-4 z-10 flex justify-center pointer-events-none">
         <div className="pointer-events-auto flex items-center gap-1 bg-gray-950/90 backdrop-blur border border-gray-800 rounded-full px-3 py-1.5">
           <button onClick={prev} disabled={page <= 1}
             className="p-1.5 text-gray-300 hover:text-white disabled:opacity-30" aria-label="Previous page">
