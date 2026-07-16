@@ -2,8 +2,12 @@
 
 import dynamic from 'next/dynamic'
 import { useRef, useState, useEffect } from 'react'
-import { AlertTriangle, ExternalLink, FileQuestion, FileText, Maximize2, Menu, Minimize2, Presentation, Video, X } from 'lucide-react'
+import {
+  AlertTriangle, ChevronDown, ExternalLink, FileText, Maximize2, Menu, Minimize2,
+  Plus, Presentation, Trash2, Video, X,
+} from 'lucide-react'
 import { getEmbedStrategy } from '@/lib/embed'
+import { AddDocPanel } from './AddDocPanel'
 import type { ShowLink } from '@/types'
 
 const PdfViewer = dynamic(() => import('./PdfViewer').then((m) => m.PdfViewer), {
@@ -16,35 +20,47 @@ const PdfViewer = dynamic(() => import('./PdfViewer').then((m) => m.PdfViewer), 
 })
 
 interface ViewerProps {
+  classCode: string
   links: ShowLink[]
   openTabIds: string[]
   activeTabId: string | null
   onToggleSidebar: () => void
   onActivate: (id: string) => void
   onClose: (id: string) => void
+  onAdd: (link: ShowLink) => Promise<void>
+  onRemove: (id: string) => Promise<void>
+  onRefresh: () => Promise<void>
 }
 
-export function Viewer({ links, openTabIds, activeTabId, onToggleSidebar, onActivate, onClose }: ViewerProps) {
-  if (openTabIds.length === 0) {
-    return (
-      <div className="flex-1 flex flex-col items-center justify-center text-gray-500 relative">
-        <button 
-          onClick={onToggleSidebar}
-          className="absolute top-4 left-4 p-2 rounded bg-gray-800 text-gray-300 hover:text-white md:hidden z-10"
-          aria-label="Open sidebar"
-        >
-          <Menu size={20} />
-        </button>
-        <FileQuestion size={48} className="mb-3 opacity-40" />
-        <p className="text-sm">Select a file from the sidebar</p>
-      </div>
-    )
+function fileIcon(kind: ShowLink['kind'], size = 15) {
+  if (kind === 'pdf') return <FileText size={size} className="text-rose-400 shrink-0" />
+  if (kind === 'video') return <Video size={size} className="text-blue-400 shrink-0" />
+  return <Presentation size={size} className="text-amber-500 shrink-0" />
+}
+
+export function Viewer({ classCode, links, openTabIds, activeTabId, onToggleSidebar, onActivate, onClose, onAdd, onRemove, onRefresh }: ViewerProps) {
+  const [filesOpen, setFilesOpen] = useState(false)
+  const [adding, setAdding] = useState(false)
+  const filesRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!filesOpen) return
+    function onDocClick(e: MouseEvent) {
+      if (filesRef.current && !filesRef.current.contains(e.target as Node)) setFilesOpen(false)
+    }
+    document.addEventListener('mousedown', onDocClick)
+    return () => document.removeEventListener('mousedown', onDocClick)
+  }, [filesOpen])
+
+  function selectFile(id: string) {
+    onActivate(id)
+    setFilesOpen(false)
   }
 
   return (
     <div className="flex-1 flex flex-col bg-gray-900 min-w-0 overflow-hidden">
       {/* Tab bar */}
-      <div className="flex items-end overflow-x-auto bg-gray-950 border-b border-gray-800 shrink-0 scrollbar-none">
+      <div className="flex items-stretch bg-gray-950 border-b border-gray-800/80 shrink-0">
         <button
           onClick={onToggleSidebar}
           className="p-3 text-gray-400 hover:text-white md:hidden border-r border-gray-800 shrink-0"
@@ -52,76 +68,179 @@ export function Viewer({ links, openTabIds, activeTabId, onToggleSidebar, onActi
         >
           <Menu size={18} />
         </button>
-        {openTabIds.map(id => {
-          const link = links.find(l => l.id === id)
-          if (!link) return null
-          const active = id === activeTabId
-          return (
-            <button
-              key={id}
-              onClick={() => onActivate(id)}
-              className={`group flex items-center gap-1.5 px-3 py-2.5 border-r border-gray-800 shrink-0 max-w-[180px] min-w-0 transition-colors ${
-                active
-                  ? 'bg-gray-900 text-white border-b-2 border-b-gray-400 -mb-px'
-                  : 'text-gray-500 hover:text-gray-300 hover:bg-gray-900/50'
-              }`}
-            >
-              {link.kind === 'pdf'
-                ? <FileText size={12} className="text-red-400 shrink-0" />
-                : link.kind === 'video'
-                  ? <Video size={12} className="text-blue-400 shrink-0" />
-                  : <Presentation size={12} className="text-orange-400 shrink-0" />}
-              <span className="text-xs truncate flex-1 text-left">{link.title}</span>
-              <span
-                role="button"
-                onClick={e => { e.stopPropagation(); onClose(id) }}
-                className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-gray-700 text-gray-400 hover:text-gray-200 shrink-0 ml-1"
-                aria-label="Close tab"
+
+        <button
+          onClick={() => setAdding(true)}
+          className="flex items-center gap-1.5 px-3 text-slate-400 hover:text-white hover:bg-gray-900/60 border-r border-gray-800 shrink-0 smooth-transition"
+          title="添加文件"
+        >
+          <Plus size={15} />
+        </button>
+
+        <div ref={filesRef} className="relative shrink-0 border-r border-gray-800">
+          <button
+            onClick={() => setFilesOpen(v => !v)}
+            className={`flex items-center gap-1.5 px-3 h-full text-sm font-medium smooth-transition ${
+              filesOpen ? 'text-white bg-gray-900/60' : 'text-slate-400 hover:text-white hover:bg-gray-900/60'
+            }`}
+          >
+            <span>选择文件</span>
+            <span className="text-[10px] text-slate-500 font-mono">({links.length})</span>
+            <ChevronDown size={13} className={`transition-transform ${filesOpen ? 'rotate-180' : ''}`} />
+          </button>
+
+          {filesOpen && (
+            <div className="absolute left-0 top-full mt-1 w-72 max-h-96 overflow-y-auto rounded-xl border border-gray-800 bg-gray-950 shadow-2xl z-50 py-1.5">
+              {links.length === 0 ? (
+                <p className="px-4 py-6 text-xs text-gray-500 italic text-center">暂无文件，点击左侧「+」添加。</p>
+              ) : (
+                links.map(link => {
+                  const active = link.id === activeTabId
+                  return (
+                    <div
+                      key={link.id}
+                      onClick={() => selectFile(link.id)}
+                      className={`group flex items-center gap-2.5 px-3 py-2 mx-1.5 rounded-lg cursor-pointer smooth-transition ${
+                        active ? 'bg-emerald-600/15 text-white' : 'text-slate-300 hover:bg-gray-900/70 hover:text-white'
+                      }`}
+                    >
+                      {fileIcon(link.kind, 14)}
+                      <span className="flex-1 min-w-0 text-xs font-medium truncate">{link.title}</span>
+                      <button
+                        onClick={e => { e.stopPropagation(); onRemove(link.id) }}
+                        className="opacity-0 group-hover:opacity-100 p-1 rounded text-slate-500 hover:text-rose-400 hover:bg-slate-900/80 smooth-transition shrink-0"
+                        aria-label="Remove"
+                      >
+                        <Trash2 size={12} />
+                      </button>
+                    </div>
+                  )
+                })
+              )}
+            </div>
+          )}
+        </div>
+
+        <div className="flex items-end overflow-x-auto scroll-hint-right flex-1 min-w-0">
+          {openTabIds.map(id => {
+            const link = links.find(l => l.id === id)
+            if (!link) return null
+            const active = id === activeTabId
+            return (
+              <button
+                key={id}
+                onClick={() => onActivate(id)}
+                className={`group flex items-center gap-2 px-4 py-3 border-r border-gray-800 shrink-0 max-w-[180px] min-w-0 transition-all smooth-transition ${
+                  active
+                    ? 'bg-gray-900 text-white border-b-2 border-b-emerald-500 -mb-px font-semibold'
+                    : 'text-slate-500 hover:text-slate-350 hover:bg-gray-900/40'
+                }`}
               >
-                <X size={10} />
-              </span>
-            </button>
-          )
-        })}
+                {fileIcon(link.kind, 13)}
+                <span className="text-xs truncate flex-1 text-left">{link.title}</span>
+                <span
+                  role="button"
+                  onClick={e => { e.stopPropagation(); onClose(id) }}
+                  className="opacity-100 md:opacity-0 md:group-hover:opacity-100 p-1 rounded hover:bg-gray-800 text-slate-500 hover:text-slate-300 shrink-0 ml-1.5 smooth-transition"
+                  aria-label="Close tab"
+                >
+                  <X size={10} />
+                </span>
+              </button>
+            )
+          })}
+        </div>
       </div>
 
-      {/* Viewers — all mounted, only active one visible */}
-      <div className="flex-1 relative min-h-0">
-        {openTabIds.map(id => {
-          const link = links.find(l => l.id === id)
-          if (!link) return null
-          const active = id === activeTabId
-          return (
-            <div
-              key={id}
-              className="absolute inset-0 flex flex-col"
-              style={{ display: active ? 'flex' : 'none' }}
+      {/* Viewer content */}
+      {openTabIds.length === 0 ? (
+        <div className="flex-1 flex flex-col items-center justify-center gap-4 text-center px-6">
+          <div className="w-14 h-14 rounded-2xl bg-amber-950/40 border border-amber-900/30 flex items-center justify-center">
+            <Presentation size={24} className="text-amber-500" />
+          </div>
+          <div className="space-y-1.5">
+            <h2 className="text-base font-semibold text-white">选择或添加文件开始演示</h2>
+            <p className="text-xs text-slate-500">使用上方「选择文件」查看已上传的文档，或点击「+」添加新文件</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setAdding(true)}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold active:scale-[0.98] transition-all duration-200"
             >
-              <header className="flex items-center gap-3 px-4 py-3 border-b border-gray-800 bg-gray-950 shrink-0">
-                <h2 className="flex-1 text-sm font-medium text-white truncate">{link.title}</h2>
-                <a
-                  href={link.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="p-1.5 text-gray-400 hover:text-white"
-                  title="Open source URL"
-                >
-                  <ExternalLink size={14} />
-                </a>
-              </header>
-              <div className="flex-1 min-h-0 relative">
-                {link.kind === 'pdf' ? (
-                  <PdfViewer url={link.url} r2Key={link.r2Key} />
-                ) : link.kind === 'video' ? (
-                  <VideoViewer link={link} />
-                ) : (
-                  <PptxViewer link={link} />
-                )}
+              <Plus size={13} /> <span>添加文件</span>
+            </button>
+            {links.length > 0 && (
+              <button
+                onClick={() => setFilesOpen(true)}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gray-800 border border-gray-700 text-slate-200 text-xs font-semibold hover:bg-gray-750 active:scale-[0.98] transition-all duration-200"
+              >
+                <ChevronDown size={13} /> <span>选择文件</span>
+              </button>
+            )}
+          </div>
+        </div>
+      ) : (
+        <div className="flex-1 relative min-h-0">
+          {openTabIds.map(id => {
+            const link = links.find(l => l.id === id)
+            if (!link) return null
+            const active = id === activeTabId
+            return (
+              <div
+                key={id}
+                className="absolute inset-0 flex flex-col"
+                style={{ display: active ? 'flex' : 'none' }}
+              >
+                <header className="flex items-center gap-3 px-4 py-3 border-b border-gray-800 bg-gray-950 shrink-0">
+                  <h2 className="flex-1 text-sm font-medium text-white truncate">{link.title}</h2>
+                  <a
+                    href={link.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="p-1.5 text-gray-400 hover:text-white"
+                    title="Open source URL"
+                  >
+                    <ExternalLink size={14} />
+                  </a>
+                </header>
+                <div className="flex-1 min-h-0 relative">
+                  {link.kind === 'pdf' ? (
+                    <PdfViewer url={link.url} r2Key={link.r2Key} />
+                  ) : link.kind === 'video' ? (
+                    <VideoViewer link={link} />
+                  ) : (
+                    <PptxViewer link={link} />
+                  )}
+                </div>
               </div>
+            )
+          })}
+        </div>
+      )}
+
+      {/* Add Document Modal Dialog */}
+      {adding && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm transition-opacity duration-300">
+          <div className="w-full max-w-md rounded-2xl glass-panel shadow-2xl border border-gray-800/80 overflow-hidden flex flex-col scale-100 transition-transform duration-300">
+            <div className="px-5 py-4 border-b border-gray-800/60 flex items-center justify-between bg-slate-950/60">
+              <h3 className="text-base font-bold text-white flex items-center gap-2">
+                <Plus size={18} className="text-emerald-400" />
+                <span>添加共修文件</span>
+              </h3>
+              <button
+                onClick={() => setAdding(false)}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-gray-900 smooth-transition"
+                aria-label="Close modal"
+              >
+                <X size={16} />
+              </button>
             </div>
-          )
-        })}
-      </div>
+            <div className="p-5 overflow-y-auto max-h-[75vh]">
+              <AddDocPanel classCode={classCode} onAdd={onAdd} onClose={() => setAdding(false)} onRefresh={onRefresh} />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

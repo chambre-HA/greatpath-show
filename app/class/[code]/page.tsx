@@ -2,8 +2,10 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { Sidebar } from '@/components/Sidebar'
+import { Sidebar, type ClassFunction } from '@/components/Sidebar'
 import { Viewer } from '@/components/Viewer'
+import { DedicationPanel } from '@/components/DedicationPanel'
+import { MessagesPanel } from '@/components/MessagesPanel'
 import { getStore } from '@/lib/links-store'
 import type { ClassInfo, ShowLink } from '@/types'
 
@@ -16,6 +18,7 @@ export default function ClassPage() {
   const [activeTabId, setActiveTabId] = useState<string | null>(null)
   const [classInfo, setClassInfo] = useState<ClassInfo | null>(null)
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
+  const [activeFunction, setActiveFunction] = useState<ClassFunction>('presentation')
   const initializedRef = useRef(false)
 
   const refresh = useCallback(async () => {
@@ -94,35 +97,47 @@ export default function ClassPage() {
     await refresh()
   }
 
+  const handleSelectFunction = useCallback((fn: ClassFunction) => {
+    setActiveFunction(fn)
+    setIsSidebarOpen(false)
+  }, [])
+
   return (
     <main className="flex h-screen bg-gray-900 text-gray-100 overflow-hidden relative">
       {/* Mobile Backdrop */}
       {isSidebarOpen && (
-        <div 
+        <div
           className="fixed inset-0 z-40 bg-black/60 md:hidden transition-opacity"
           onClick={() => setIsSidebarOpen(false)}
         />
       )}
       <Sidebar
-        classCode={classCode}
         className={classInfo?.name || classCode}
-        links={links}
-        selectedId={activeTabId}
+        activeFunction={activeFunction}
         isOpen={isSidebarOpen}
-        onSelect={handleSelect}
-        onAdd={handleAdd}
-        onRemove={handleRemove}
-        onRefresh={refresh}
+        onSelectFunction={handleSelectFunction}
         onBack={() => router.push('/')}
       />
-      <Viewer
-        links={links}
-        openTabIds={openTabIds}
-        activeTabId={activeTabId}
-        onToggleSidebar={() => setIsSidebarOpen(true)}
-        onActivate={handleSelect}
-        onClose={handleCloseTab}
-      />
+      {activeFunction === 'presentation' && (
+        <Viewer
+          classCode={classCode}
+          links={links}
+          openTabIds={openTabIds}
+          activeTabId={activeTabId}
+          onToggleSidebar={() => setIsSidebarOpen(true)}
+          onActivate={handleSelect}
+          onClose={handleCloseTab}
+          onAdd={handleAdd}
+          onRemove={handleRemove}
+          onRefresh={refresh}
+        />
+      )}
+      {activeFunction === 'dedication' && (
+        <DedicationPanel classCode={classCode} onToggleSidebar={() => setIsSidebarOpen(true)} />
+      )}
+      {activeFunction === 'messages' && (
+        <MessagesPanel classCode={classCode} onToggleSidebar={() => setIsSidebarOpen(true)} />
+      )}
     </main>
   )
 }

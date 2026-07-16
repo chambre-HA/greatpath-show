@@ -1,166 +1,74 @@
 'use client'
 
-import { useState } from 'react'
-import {
-  ArrowLeft, ChevronDown, ChevronRight,
-  FileText, HeartHandshake, Link2, MessageSquare, Plus, Presentation, Trash2, Video,
-} from 'lucide-react'
+import { ArrowLeft, HeartHandshake, MessageSquare, Presentation } from 'lucide-react'
 import { CountdownTimer } from './CountdownTimer'
-import { AddDocPanel } from './AddDocPanel'
-import type { ShowLink } from '@/types'
 
-function hostOf(url: string): string {
-  try { return new URL(url).hostname.replace(/^www\./, '') } catch { return '' }
-}
+export type ClassFunction = 'presentation' | 'dedication' | 'messages'
 
-// ── Sidebar ──────────────────────────────────────────────────────────────────
+const FUNCTIONS: { value: ClassFunction; label: string; icon: typeof Presentation; iconBg: string; iconColor: string }[] = [
+  { value: 'presentation', label: '演示文稿', icon: Presentation, iconBg: 'bg-amber-950/40 border-amber-900/30', iconColor: 'text-amber-500' },
+  { value: 'dedication', label: '回向名单', icon: HeartHandshake, iconBg: 'bg-pink-950/40 border-pink-900/30', iconColor: 'text-pink-400' },
+  { value: 'messages', label: '消息模板', icon: MessageSquare, iconBg: 'bg-teal-950/40 border-teal-900/30', iconColor: 'text-teal-400' },
+]
 
 interface SidebarProps {
-  classCode: string
   className: string
-  links: ShowLink[]
-  selectedId: string | null
+  activeFunction: ClassFunction
   isOpen: boolean
-  onSelect: (id: string) => void
-  onAdd: (link: ShowLink) => Promise<void>
-  onRemove: (id: string) => Promise<void>
-  onRefresh: () => Promise<void>
+  onSelectFunction: (fn: ClassFunction) => void
   onBack: () => void
 }
 
-export function Sidebar({ classCode, className, links, selectedId, isOpen, onSelect, onAdd, onRemove, onRefresh, onBack }: SidebarProps) {
-  const [filesOpen, setFilesOpen] = useState(true)
-  const [adding, setAdding] = useState(false)
-
-  function closeAdd() { setAdding(false) }
-
-  function toggleFiles() {
-    setFilesOpen(o => {
-      if (o && adding) setAdding(false)
-      return !o
-    })
-  }
-
+export function Sidebar({ className, activeFunction, isOpen, onSelectFunction, onBack }: SidebarProps) {
   return (
-    <aside className={`w-72 shrink-0 h-screen flex flex-col bg-gray-950 border-r border-gray-800 fixed md:relative z-50 transition-transform duration-300 overflow-y-auto ${
+    <aside className={`w-72 shrink-0 h-screen flex flex-col bg-gray-950 border-r border-gray-800/80 fixed md:relative z-45 transition-transform duration-300 ${
       isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
     }`}>
       {/* Header */}
-      <div className="p-4 border-b border-gray-800 shrink-0">
-        <div className="flex items-center gap-2">
+      <div className="p-4 border-b border-gray-800/60 shrink-0 bg-gray-950/40">
+        <div className="flex items-center gap-3">
           <button
             onClick={onBack}
-            className="p-1.5 rounded text-gray-500 hover:text-gray-300 hover:bg-gray-800"
+            className="p-2 rounded-xl text-gray-400 hover:text-gray-200 hover:bg-gray-900 border border-transparent hover:border-gray-800/50 smooth-transition"
             aria-label="返回"
           >
             <ArrowLeft size={16} />
           </button>
           <div className="flex-1 min-w-0">
-            <h1 className="text-base font-bold text-white leading-tight">共修平台</h1>
-            <p className="text-[11px] text-gray-600 truncate">{className}</p>
+            <h1 className="text-base font-extrabold text-white tracking-tight leading-tight">大道大商 . 共修平台</h1>
+            <p className="text-[11px] text-gray-500 font-medium truncate mt-0.5">{className}</p>
           </div>
-          <a
-            href={`/class/${classCode}/messages`}
-            className="p-1.5 rounded text-gray-500 hover:text-gray-300 hover:bg-gray-800"
-            title="消息模板"
-          >
-            <MessageSquare size={16} />
-          </a>
-          <a
-            href={`/class/${classCode}/dedication`}
-            className="p-1.5 rounded text-gray-500 hover:text-gray-300 hover:bg-gray-800"
-            title="回向名单"
-          >
-            <HeartHandshake size={16} />
-          </a>
         </div>
       </div>
 
-      {/* Files section */}
-      <div className="border-b border-gray-800 shrink-0">
-        <div className="px-4 py-3 flex items-center gap-1.5">
-          <button
-            onClick={toggleFiles}
-            className="flex items-center gap-1.5 flex-1 min-w-0 text-left group"
-          >
-            {filesOpen
-              ? <ChevronDown size={13} className="text-gray-500 shrink-0" />
-              : <ChevronRight size={13} className="text-gray-500 shrink-0" />}
-            <span className="text-xs uppercase tracking-wider text-gray-500 font-semibold group-hover:text-gray-400 transition-colors">
-              Files ({links.length})
-            </span>
-          </button>
-          {filesOpen && (
+      {/* Function selector */}
+      <nav className="flex-1 min-h-0 px-3 py-4 space-y-1.5 overflow-y-auto">
+        <p className="px-3 text-[10px] uppercase font-bold tracking-wider text-slate-500 mb-1">功能导航</p>
+        {FUNCTIONS.map(fn => {
+          const Icon = fn.icon
+          const active = fn.value === activeFunction
+          return (
             <button
-              onClick={() => adding ? closeAdd() : setAdding(true)}
-              className="p-1 rounded text-gray-400 hover:text-white hover:bg-gray-800"
-              title="Add document"
+              key={fn.value}
+              onClick={() => onSelectFunction(fn.value)}
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium smooth-transition border border-transparent ${
+                active
+                  ? 'bg-emerald-600/15 text-white'
+                  : 'text-slate-300 hover:text-white hover:bg-gray-900/60 hover:border-gray-800/40'
+              }`}
             >
-              <Plus size={16} />
-            </button>
-          )}
-        </div>
-
-        {filesOpen && (
-          <>
-            {adding && (
-              <div className="px-4 pb-3">
-                <AddDocPanel classCode={classCode} onAdd={onAdd} onClose={closeAdd} onRefresh={onRefresh} />
+              <div className={`w-6 h-6 rounded-lg border flex items-center justify-center shrink-0 ${fn.iconBg}`}>
+                <Icon size={14} className={fn.iconColor} />
               </div>
-            )}
-
-            <ul className="px-2 pb-2 space-y-0.5 max-h-64 overflow-y-auto">
-              {links.length === 0 && (
-                <li className="px-2 py-4 text-xs text-gray-500 italic text-center">No files yet.</li>
-              )}
-              {links.map(link => {
-                const active = link.id === selectedId
-                const isExternal = !link.id.startsWith('r2:')
-                const host = isExternal ? hostOf(link.url) : ''
-                const sizeMb = link.size ? Math.round(link.size / (1024 * 1024)) : null
-                return (
-                  <li key={link.id}>
-                    <div
-                      className={`group flex items-center gap-2 px-2 py-2 rounded cursor-pointer ${
-                        active ? 'bg-gray-800 text-white' : 'text-gray-300 hover:bg-gray-900'
-                      }`}
-                      onClick={() => onSelect(link.id)}
-                    >
-                      {link.kind === 'pdf'
-                        ? <FileText size={14} className="text-red-400 shrink-0" />
-                        : link.kind === 'video'
-                          ? <Video size={14} className="text-blue-400 shrink-0" />
-                          : <Presentation size={14} className="text-orange-400 shrink-0" />}
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm truncate">{link.title}</p>
-                        {(isExternal || sizeMb) && (
-                          <p className="text-[10px] text-gray-500 truncate flex items-center gap-1">
-                            {isExternal ? <><Link2 size={10} /> {host}</> : <>{sizeMb} MB</>}
-                          </p>
-                        )}
-                      </div>
-                      <button
-                        onClick={e => { e.stopPropagation(); onRemove(link.id) }}
-                        className="opacity-0 group-hover:opacity-100 p-1 rounded text-gray-500 hover:text-red-400"
-                        aria-label="Remove"
-                      >
-                        <Trash2 size={12} />
-                      </button>
-                    </div>
-                  </li>
-                )
-              })}
-            </ul>
-          </>
-        )}
-      </div>
-
-      {/* Spacer */}
-      <div className="flex-1" />
+              <span className="flex-1 text-left">{fn.label}</span>
+            </button>
+          )
+        })}
+      </nav>
 
       {/* Timer — pinned at bottom */}
-      <div className="px-4 pt-4 pb-[50px] border-t border-gray-800 shrink-0">
-        <h2 className="text-xs uppercase tracking-wider text-gray-500 font-semibold mb-3">Timer</h2>
+      <div className="px-4 pt-2 pb-[50px] border-t border-gray-800/60 shrink-0 bg-gray-950/80">
+        <h2 className="text-xs uppercase tracking-wider text-slate-500 font-bold mb-1.5 px-1">Timer</h2>
         <CountdownTimer />
       </div>
     </aside>
