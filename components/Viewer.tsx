@@ -3,7 +3,7 @@
 import dynamic from 'next/dynamic'
 import { useRef, useState, useEffect } from 'react'
 import {
-  AlertTriangle, ChevronDown, ExternalLink, FileText, Maximize2, Menu, Minimize2,
+  AlertTriangle, Check, ChevronDown, ExternalLink, FileText, Maximize2, Menu, Minimize2,
   Plus, Presentation, Trash2, Video, X,
 } from 'lucide-react'
 import { getEmbedStrategy } from '@/lib/embed'
@@ -41,6 +41,7 @@ function fileIcon(kind: ShowLink['kind'], size = 15) {
 export function Viewer({ classCode, links, openTabIds, activeTabId, onToggleSidebar, onActivate, onClose, onAdd, onRemove, onRefresh }: ViewerProps) {
   const [filesOpen, setFilesOpen] = useState(false)
   const [adding, setAdding] = useState(false)
+  const [checkedIds, setCheckedIds] = useState<Set<string>>(new Set())
   const filesRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -52,8 +53,25 @@ export function Viewer({ classCode, links, openTabIds, activeTabId, onToggleSide
     return () => document.removeEventListener('mousedown', onDocClick)
   }, [filesOpen])
 
-  function selectFile(id: string) {
-    onActivate(id)
+  function toggleFilesOpen() {
+    setFilesOpen(v => {
+      if (v) setCheckedIds(new Set())
+      return !v
+    })
+  }
+
+  function toggleChecked(id: string) {
+    setCheckedIds(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  function openChecked() {
+    checkedIds.forEach(id => onActivate(id))
+    setCheckedIds(new Set())
     setFilesOpen(false)
   }
 
@@ -69,19 +87,11 @@ export function Viewer({ classCode, links, openTabIds, activeTabId, onToggleSide
           <Menu size={18} />
         </button>
 
-        <button
-          onClick={() => setAdding(true)}
-          className="flex items-center gap-1.5 px-3 text-slate-400 hover:text-white hover:bg-gray-900/60 border-r border-gray-800 shrink-0 smooth-transition"
-          title="添加文件"
-        >
-          <Plus size={15} />
-        </button>
-
         <div ref={filesRef} className="relative shrink-0 border-r border-gray-800">
           <button
-            onClick={() => setFilesOpen(v => !v)}
-            className={`flex items-center gap-1.5 px-3 h-full text-sm font-medium smooth-transition ${
-              filesOpen ? 'text-white bg-gray-900/60' : 'text-slate-400 hover:text-white hover:bg-gray-900/60'
+            onClick={toggleFilesOpen}
+            className={`flex items-center gap-1.5 px-3 h-full text-sm font-semibold smooth-transition ${
+              filesOpen ? 'text-white bg-gray-900/60' : 'text-slate-200 hover:text-white hover:bg-gray-900/60'
             }`}
           >
             <span>选择文件</span>
@@ -90,36 +100,64 @@ export function Viewer({ classCode, links, openTabIds, activeTabId, onToggleSide
           </button>
 
           {filesOpen && (
-            <div className="absolute left-0 top-full mt-1 w-72 max-h-96 overflow-y-auto rounded-xl border border-gray-800 bg-gray-950 shadow-2xl z-50 py-1.5">
-              {links.length === 0 ? (
-                <p className="px-4 py-6 text-xs text-gray-500 italic text-center">暂无文件，点击左侧「+」添加。</p>
-              ) : (
-                links.map(link => {
-                  const active = link.id === activeTabId
-                  return (
-                    <div
-                      key={link.id}
-                      onClick={() => selectFile(link.id)}
-                      className={`group flex items-center gap-2.5 px-3 py-2 mx-1.5 rounded-lg cursor-pointer smooth-transition ${
-                        active ? 'bg-emerald-600/15 text-white' : 'text-slate-300 hover:bg-gray-900/70 hover:text-white'
-                      }`}
-                    >
-                      {fileIcon(link.kind, 14)}
-                      <span className="flex-1 min-w-0 text-xs font-medium truncate">{link.title}</span>
-                      <button
-                        onClick={e => { e.stopPropagation(); onRemove(link.id) }}
-                        className="opacity-0 group-hover:opacity-100 p-1 rounded text-slate-500 hover:text-rose-400 hover:bg-slate-900/80 smooth-transition shrink-0"
-                        aria-label="Remove"
+            <div className="absolute left-0 top-full mt-1 w-72 rounded-xl border border-gray-800 bg-gray-950 shadow-2xl z-50 flex flex-col max-h-[28rem]">
+              <div className="flex-1 min-h-0 overflow-y-auto py-1.5">
+                {links.length === 0 ? (
+                  <p className="px-4 py-6 text-xs text-gray-500 italic text-center">暂无文件，点击右侧「添加文件」。</p>
+                ) : (
+                  links.map(link => {
+                    const active = link.id === activeTabId
+                    const checked = checkedIds.has(link.id)
+                    return (
+                      <div
+                        key={link.id}
+                        onClick={() => toggleChecked(link.id)}
+                        className={`group flex items-center gap-2.5 px-3 py-2 mx-1.5 rounded-lg cursor-pointer smooth-transition ${
+                          checked ? 'bg-emerald-600/15 text-white' : active ? 'text-emerald-400' : 'text-slate-300 hover:bg-gray-900/70 hover:text-white'
+                        }`}
                       >
-                        <Trash2 size={12} />
-                      </button>
-                    </div>
-                  )
-                })
+                        <span className={`shrink-0 w-4 h-4 rounded border flex items-center justify-center smooth-transition ${
+                          checked ? 'bg-emerald-600 border-emerald-600' : 'border-gray-700'
+                        }`}>
+                          {checked && <Check size={11} className="text-white" />}
+                        </span>
+                        {fileIcon(link.kind, 14)}
+                        <span className="flex-1 min-w-0 text-xs font-medium truncate">{link.title}</span>
+                        <button
+                          onClick={e => { e.stopPropagation(); onRemove(link.id) }}
+                          className="opacity-0 group-hover:opacity-100 p-1 rounded text-slate-500 hover:text-rose-400 hover:bg-slate-900/80 smooth-transition shrink-0"
+                          aria-label="Remove"
+                        >
+                          <Trash2 size={12} />
+                        </button>
+                      </div>
+                    )
+                  })
+                )}
+              </div>
+              {links.length > 0 && (
+                <div className="shrink-0 border-t border-gray-800 p-2">
+                  <button
+                    onClick={openChecked}
+                    disabled={checkedIds.size === 0}
+                    className="w-full flex items-center justify-center gap-1.5 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold disabled:opacity-30 disabled:pointer-events-none smooth-transition"
+                  >
+                    <span>打开所选{checkedIds.size > 0 ? ` (${checkedIds.size})` : ''}</span>
+                  </button>
+                </div>
               )}
             </div>
           )}
         </div>
+
+        <button
+          onClick={() => setAdding(true)}
+          className="flex items-center px-2.5 text-slate-550 hover:text-slate-300 hover:bg-gray-900/60 border-r border-gray-800 shrink-0 smooth-transition"
+          title="添加文件"
+          aria-label="添加文件"
+        >
+          <Plus size={14} />
+        </button>
 
         <div className="flex items-end overflow-x-auto scroll-hint-right flex-1 min-w-0">
           {openTabIds.map(id => {
@@ -159,24 +197,24 @@ export function Viewer({ classCode, links, openTabIds, activeTabId, onToggleSide
             <Presentation size={24} className="text-amber-500" />
           </div>
           <div className="space-y-1.5">
-            <h2 className="text-base font-semibold text-white">选择或添加文件开始演示</h2>
-            <p className="text-xs text-slate-500">使用上方「选择文件」查看已上传的文档，或点击「+」添加新文件</p>
+            <h2 className="text-base font-semibold text-white">选择文件开始演示</h2>
+            <p className="text-xs text-slate-500">从已上传的文档中选择，也可添加新文件</p>
           </div>
           <div className="flex items-center gap-2">
-            <button
-              onClick={() => setAdding(true)}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold active:scale-[0.98] transition-all duration-200"
-            >
-              <Plus size={13} /> <span>添加文件</span>
-            </button>
             {links.length > 0 && (
               <button
                 onClick={() => setFilesOpen(true)}
-                className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gray-800 border border-gray-700 text-slate-200 text-xs font-semibold hover:bg-gray-750 active:scale-[0.98] transition-all duration-200"
+                className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold active:scale-[0.98] transition-all duration-200"
               >
                 <ChevronDown size={13} /> <span>选择文件</span>
               </button>
             )}
+            <button
+              onClick={() => setAdding(true)}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl border border-gray-700 text-slate-400 text-xs font-medium hover:bg-gray-900 hover:text-slate-200 active:scale-[0.98] transition-all duration-200"
+            >
+              <Plus size={13} /> <span>添加文件</span>
+            </button>
           </div>
         </div>
       ) : (
