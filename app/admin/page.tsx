@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback, useRef } from 'react'
-import { ChevronRight, Copy, EllipsisVertical, FileText, Link2, Pencil, Presentation, Plus, RotateCcw, Save, ShieldAlert, Trash2, X, ArrowUp, ArrowDown, Shield, LogOut, Check, School } from 'lucide-react'
+import { ChevronRight, Copy, EllipsisVertical, FileText, Library, Link2, Pencil, Presentation, Plus, RotateCcw, Save, ShieldAlert, Trash2, X, ArrowUp, ArrowDown, Shield, LogOut, Check, School } from 'lucide-react'
 import { cloneLink, validateLinkInput } from '@/lib/links-store'
 import { AddDocPanel } from '@/components/AddDocPanel'
 import type { ClassInfo, ShowLink } from '@/types'
@@ -495,6 +495,130 @@ function ClassLinks({ password, classCode, classes }: { password: string; classC
   )
 }
 
+// ── SharedLibraryManager Component ────────────────────────────────────────────
+
+interface LibraryOwner {
+  code: string
+  name: string
+  id: string
+}
+
+type LibraryItem = ShowLink & { owners: LibraryOwner[] }
+
+function SharedLibraryManager({ password }: { password: string }) {
+  const [items, setItems] = useState<LibraryItem[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [busyUrl, setBusyUrl] = useState<string | null>(null)
+  const [toastMsg, setToastMsg] = useState<string | null>(null)
+
+  const load = useCallback(async () => {
+    setLoading(true)
+    try {
+      const data = await adminPost(password, { action: 'listLibraryAll' })
+      setItems(Array.isArray(data) ? data : [])
+    } catch (e) {
+      setError(e instanceof Error ? e.message : '加载共享库失败')
+    } finally {
+      setLoading(false)
+    }
+  }, [password])
+
+  useEffect(() => { load() }, [load])
+
+  function showToast(msg: string) {
+    setToastMsg(msg)
+    setTimeout(() => setToastMsg(null), 2000)
+  }
+
+  async function handleDelete(item: LibraryItem) {
+    const classNames = item.owners.map(o => o.name).join('、')
+    if (!confirm(`确定从共享库中彻底删除「${item.title}」？此文件将从「${classNames}」共 ${item.owners.length} 个班级中移除，且无法恢复！`)) return
+    setBusyUrl(item.url)
+    try {
+      await Promise.all(item.owners.map(o => adminPost(password, { action: 'purgeLink', code: o.code, id: o.id })))
+      setItems(prev => prev.filter(l => l.url !== item.url))
+      showToast('文件已从共享库彻底删除')
+    } catch (e) {
+      setError(e instanceof Error ? e.message : '删除失败')
+    } finally {
+      setBusyUrl(null)
+    }
+  }
+
+  return (
+    <div className="max-w-2xl space-y-6">
+      <div className="border-b border-slate-800/60 pb-4">
+        <h2 className="text-lg font-extrabold text-white tracking-wide flex items-center gap-2">
+          <Library size={18} className="text-emerald-400" />
+          <span>共享库</span>
+        </h2>
+        <p className="text-xs font-semibold text-slate-500 mt-1">
+          管理所有班级当前使用中的文件，可在此彻底删除以从云存储中移除
+        </p>
+      </div>
+
+      {error && (
+        <p className="text-xs text-rose-400 bg-rose-950/20 py-2 px-4 rounded-xl border border-rose-900/30">
+          {error}
+        </p>
+      )}
+
+      {loading ? (
+        <div className="flex items-center justify-center py-16 text-slate-500 text-sm gap-2">
+          <svg className="animate-spin h-5 w-5 text-emerald-400" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+          </svg>
+          <span>正在载入共享库...</span>
+        </div>
+      ) : items.length === 0 ? (
+        <div className="text-center py-16 rounded-2xl border border-slate-800/80 bg-slate-900/30">
+          <p className="text-slate-500 text-sm italic">目前没有任何班级使用中的文件。</p>
+        </div>
+      ) : (
+        <ul className="space-y-1.5">
+          {items.map(item => (
+            <li
+              key={item.url}
+              className="flex items-center justify-between gap-3 p-3 rounded-2xl bg-slate-900/40 border border-slate-850 hover:border-slate-800 smooth-transition"
+            >
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="shrink-0 text-slate-500">
+                  {item.kind === 'pdf' ? <FileText size={15} /> : item.kind === 'video' ? <FileText size={15} /> : <Presentation size={15} />}
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-slate-200 truncate max-w-[320px]">{item.title}</p>
+                  <p className="text-[10px] text-slate-500 font-mono tracking-wide truncate">
+                    {item.owners.map(o => o.name).join('、')}
+                    <span className="text-slate-600"> · {item.owners.length} 个班级</span>
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => handleDelete(item)}
+                disabled={busyUrl === item.url}
+                className="p-2 rounded-xl text-slate-500 hover:text-rose-500 hover:bg-rose-950/20 disabled:opacity-30 smooth-transition shrink-0"
+                title="从共享库彻底删除"
+              >
+                <Trash2 size={14} />
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {toastMsg && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[110] px-4 py-3 rounded-xl glass-panel border border-emerald-500/30 text-white text-xs font-semibold shadow-2xl flex items-center gap-2">
+          <Check size={14} className="text-emerald-400" />
+          <span>{toastMsg}</span>
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ── AdminPage Dashboard Component ─────────────────────────────────────────────
 
 export default function AdminPage() {
@@ -505,6 +629,8 @@ export default function AdminPage() {
 
   const [classes, setClasses] = useState<ClassInfo[]>([])
   const [selectedCode, setSelectedCode] = useState<string | null>(null)
+  const [showLibrary, setShowLibrary] = useState(false)
+  const [addingClass, setAddingClass] = useState(false)
   const [newCode, setNewCode] = useState('')
   const [newName, setNewName] = useState('')
   const [classError, setClassError] = useState<string | null>(null)
@@ -548,6 +674,7 @@ export default function AdminPage() {
       await adminPost(password, { action: 'addClass', code, name })
       setNewCode('')
       setNewName('')
+      setAddingClass(false)
       await loadClasses(password)
     } catch (e) {
       setClassError(e instanceof Error ? e.message : '添加班级失败')
@@ -679,44 +806,79 @@ export default function AdminPage() {
       <div className="flex flex-1 min-h-0">
         {/* Class list sidebar */}
         <aside className="w-80 shrink-0 border-r border-slate-800/80 flex flex-col bg-slate-950/40">
-          <div className="p-4 border-b border-slate-800/60 space-y-3 bg-slate-950/20">
-            <p className="text-[10px] uppercase font-bold tracking-wider text-slate-500">创建新班级</p>
-            <form onSubmit={handleAddClass} className="space-y-2">
-              <input
-                type="text"
-                placeholder="邀请码 (8位数字)"
-                value={newCode}
-                onChange={e => setNewCode(e.target.value)}
-                inputMode="numeric"
-                maxLength={8}
-                className="w-full px-3 py-2 text-xs rounded-xl bg-slate-950 border border-slate-800 text-slate-100 placeholder-slate-650 font-mono tracking-wider focus:outline-none focus:border-emerald-500 transition-all"
-              />
-              <input
-                type="text"
-                placeholder="班级名称 (例如: 新大12班)"
-                value={newName}
-                onChange={e => setNewName(e.target.value)}
-                className="w-full px-3 py-2 text-xs rounded-xl bg-slate-950 border border-slate-800 text-slate-100 placeholder-slate-650 focus:outline-none focus:border-emerald-500 transition-all"
-              />
-              {classError && (
-                <p className="text-[10px] text-rose-400 bg-rose-950/20 py-1.5 px-3 rounded-lg border border-rose-900/30">
-                  {classError}
-                </p>
-              )}
-              <button 
-                type="submit" 
-                disabled={classBusy || !newCode.trim() || !newName.trim()}
-                className="w-full flex items-center justify-center gap-1 py-2 text-xs font-bold rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white disabled:opacity-40 active:scale-[0.98] transition-all"
-              >
-                <Plus size={14} /> 
-                <span>添加班级</span>
-              </button>
-            </form>
+          {/* Global navigation */}
+          <div className="p-2.5 border-b border-slate-800/60 bg-slate-950/20">
+            <p className="px-3 text-[10px] uppercase font-bold tracking-wider text-slate-500 mb-2">全局管理</p>
+            <button
+              type="button"
+              onClick={() => { setShowLibrary(true); setSelectedCode(null) }}
+              className={`w-full flex items-center gap-2.5 px-3 py-3 rounded-xl border smooth-transition ${
+                showLibrary
+                  ? 'bg-emerald-600/15 border-emerald-500/30 text-white'
+                  : 'border-transparent text-slate-350 hover:bg-slate-900/50 hover:text-white'
+              }`}
+            >
+              <Library size={15} className="shrink-0" />
+              <span className="text-sm font-bold">共享库</span>
+            </button>
           </div>
 
           {/* Classes navigation list */}
           <div className="flex-1 overflow-y-auto p-2.5">
-            <p className="text-[10px] uppercase font-bold tracking-wider text-slate-500 px-3 mb-2">已有班级列表 ({classes.length})</p>
+            <p className="px-3 text-[10px] uppercase font-bold tracking-wider text-slate-500 mb-2">班级管理</p>
+            <div className="flex items-center justify-between gap-2.5 px-3 py-3 mb-1 rounded-xl text-slate-300">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <School size={15} className="shrink-0" />
+                <span className="text-sm font-bold">已有班级 ({classes.length})</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setAddingClass(v => !v)}
+                className={`p-1 rounded-lg smooth-transition shrink-0 ${
+                  addingClass ? 'text-emerald-400 bg-emerald-950/40' : 'text-slate-500 hover:text-white hover:bg-slate-900'
+                }`}
+                aria-label="添加班级"
+                title="添加班级"
+              >
+                <Plus size={14} />
+              </button>
+            </div>
+
+            {addingClass && (
+              <form onSubmit={handleAddClass} className="space-y-2 mb-3 p-3 rounded-xl border border-slate-800 bg-slate-950/60">
+                <input
+                  type="text"
+                  placeholder="邀请码 (8位数字)"
+                  value={newCode}
+                  onChange={e => setNewCode(e.target.value)}
+                  inputMode="numeric"
+                  maxLength={8}
+                  autoFocus
+                  className="w-full px-3 py-2 text-xs rounded-xl bg-slate-950 border border-slate-800 text-slate-100 placeholder-slate-650 font-mono tracking-wider focus:outline-none focus:border-emerald-500 transition-all"
+                />
+                <input
+                  type="text"
+                  placeholder="班级名称 (例如: 新大12班)"
+                  value={newName}
+                  onChange={e => setNewName(e.target.value)}
+                  className="w-full px-3 py-2 text-xs rounded-xl bg-slate-950 border border-slate-800 text-slate-100 placeholder-slate-650 focus:outline-none focus:border-emerald-500 transition-all"
+                />
+                {classError && (
+                  <p className="text-[10px] text-rose-400 bg-rose-950/20 py-1.5 px-3 rounded-lg border border-rose-900/30">
+                    {classError}
+                  </p>
+                )}
+                <button
+                  type="submit"
+                  disabled={classBusy || !newCode.trim() || !newName.trim()}
+                  className="w-full flex items-center justify-center gap-1 py-2 text-xs font-bold rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white disabled:opacity-40 active:scale-[0.98] transition-all"
+                >
+                  <Plus size={14} />
+                  <span>添加班级</span>
+                </button>
+              </form>
+            )}
+
             <ul className="space-y-1">
               {classes.length === 0 && (
                 <li className="px-3 py-6 text-xs text-slate-500 italic text-center">暂无班级。</li>
@@ -729,7 +891,7 @@ export default function AdminPage() {
                         ? 'bg-emerald-600/15 border-emerald-500/30 text-white' 
                         : 'border-transparent text-slate-350 hover:bg-slate-900/50 hover:text-white'
                     }`}
-                    onClick={() => setSelectedCode(cls.code)}
+                    onClick={() => { setSelectedCode(cls.code); setShowLibrary(false) }}
                   >
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-bold font-mono tracking-wider">{cls.code}</p>
@@ -791,10 +953,12 @@ export default function AdminPage() {
 
         {/* Links management panel */}
         <section className="flex-1 overflow-y-auto p-6 md:p-8">
-          {!selectedCode ? (
+          {showLibrary ? (
+            <SharedLibraryManager password={password} />
+          ) : !selectedCode ? (
             <div className="h-full flex flex-col items-center justify-center text-slate-500 text-sm gap-2">
               <School size={36} className="opacity-20" />
-              <span>请从左侧列表选择一个班级来管理其关联的学习文档</span>
+              <span>请从左侧列表选择一个班级来管理其关联的学习文档，或选择共享库</span>
             </div>
           ) : (
             <div className="max-w-xl space-y-6">

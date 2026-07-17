@@ -256,6 +256,38 @@ export async function listGlobalLibrary(forClassCode: string): Promise<ShowLink[
   return libraryLinks.sort((a, b) => b.addedAt.localeCompare(a.addedAt))
 }
 
+export interface LibraryOwner {
+  code: string
+  name: string
+  id: string
+}
+
+export async function listAllLibraryLinks(): Promise<(ShowLink & { owners: LibraryOwner[] })[]> {
+  const classes = await listClasses()
+  const perClass = await Promise.all(
+    classes.map(async cls => {
+      const links = await listAllLinks(cls.code)
+      return links.map(link => ({ link, ownerCode: cls.code, ownerName: cls.name }))
+    })
+  )
+
+  const groups = new Map<string, { link: ShowLink; owners: LibraryOwner[] }>()
+  for (const { link, ownerCode, ownerName } of perClass.flat()) {
+    const key = link.url
+    const owner: LibraryOwner = { code: ownerCode, name: ownerName, id: link.id }
+    const existing = groups.get(key)
+    if (existing) {
+      existing.owners.push(owner)
+    } else {
+      groups.set(key, { link, owners: [owner] })
+    }
+  }
+
+  return [...groups.values()]
+    .map(({ link, owners }) => ({ ...link, owners }))
+    .sort((a, b) => b.addedAt.localeCompare(a.addedAt))
+}
+
 export async function addLink(classCode: string, link: ShowLink): Promise<void> {
   const client = getClient()
   const items = await getStoredLinks(client, classCode)
