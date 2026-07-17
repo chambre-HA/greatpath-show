@@ -68,7 +68,7 @@ export function Sidebar({ className, activeFunction, isOpen, onSelectFunction, o
 
       {/* Timer — pinned at bottom */}
       <div className="px-4 pt-2 pb-[50px] border-t border-gray-800/60 shrink-0 bg-gray-950/80">
-        <h2 className="text-xs uppercase tracking-wider text-slate-500 font-bold mb-1.5 px-1">Timer</h2>
+        <h2 className="px-3 text-[10px] uppercase font-bold tracking-wider text-slate-500 mb-1">计时器</h2>
         <CountdownTimer />
       </div>
     </aside>

@@ -28,9 +28,9 @@ interface TimerRingProps {
   running: boolean
 }
 
-function TimerRing({ fraction }: TimerRingProps) {
+function TimerRing({ fraction, done, low }: TimerRingProps) {
   const brightCount = Math.ceil(fraction * TICK_COUNT)
-  const activeColor = '#f3f4f6' // Clean white active color
+  const activeColor = done ? '#f87171' : low ? '#fb923c' : '#f3f4f6'
 
   const r4 = (n: number) => Math.round(n * 10000) / 10000
 
@@ -126,7 +126,7 @@ export function CountdownTimer() {
 
   const fraction = targetMs > 0 ? Math.max(0, Math.min(1, remaining / targetMs)) : 0
   const isDone = remaining === 0
-  const isLow = remaining > 0 && remaining <= 60_000
+  const isLow = remaining > 0 && remaining <= 15_000
 
   const setPreset = useCallback((ms: number) => {
     setTargetMs(ms)
@@ -151,10 +151,27 @@ export function CountdownTimer() {
       <div className="relative aspect-square w-full max-w-[190px] mx-auto">
         <TimerRing fraction={fraction} done={isDone} low={isLow} running={running} />
         <div className="absolute inset-0 flex items-center justify-center">
-          <span className="font-mono font-extralight tabular-nums text-4xl tracking-tight text-white">
+          <span className={`font-mono font-extralight tabular-nums text-4xl tracking-tight smooth-transition ${
+            isDone ? 'text-rose-400' : isLow ? 'text-orange-400' : 'text-white'
+          }`}>
             {format(remaining)}
           </span>
         </div>
+      </div>
+
+      {/* Custom Duration Slider */}
+      <div className="px-1 py-1 rounded-xl bg-slate-950/40 border border-slate-900/50 p-2">
+        <input
+          type="range"
+          min={1}
+          max={60}
+          value={Math.round(targetMs / 60_000)}
+          onChange={e => {
+            const mins = parseInt(e.target.value) || 5
+            setPreset(mins * 60_000)
+          }}
+          className="w-full accent-white bg-slate-800 rounded-lg appearance-none h-1 cursor-pointer"
+        />
       </div>
 
       {/* White themed start/pause and control buttons */}
@@ -167,7 +184,7 @@ export function CountdownTimer() {
           {running ? <Pause size={14} /> : <Play size={14} />}
           <span>{running ? 'Pause' : 'Start'}</span>
         </button>
-        
+
         <button
           onClick={addMinute}
           className="flex items-center justify-center gap-1 px-3 py-2 rounded-xl border border-slate-800 text-slate-350 hover:text-white hover:bg-slate-900 active:scale-[0.97] smooth-transition text-xs font-medium"
@@ -176,7 +193,7 @@ export function CountdownTimer() {
           <Plus size={14} />
           <span>1m</span>
         </button>
-        
+
         <button
           onClick={reset}
           className="flex items-center justify-center p-2 rounded-xl border border-slate-800 text-slate-400 hover:text-white hover:bg-slate-900 active:scale-[0.97] smooth-transition"
@@ -184,27 +201,6 @@ export function CountdownTimer() {
         >
           <RotateCcw size={14} />
         </button>
-      </div>
-
-      {/* Custom Duration Slider */}
-      <div className="space-y-1.5 px-1 py-1 rounded-xl bg-slate-950/40 border border-slate-900/50 p-2">
-        <div className="flex justify-between items-center text-[10px] text-slate-500 font-bold uppercase tracking-wider">
-          <span>时长调节 Slider</span>
-          <span className="font-mono text-slate-300">{Math.round(targetMs / 60_000)} 分钟</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <input
-            type="range"
-            min={1}
-            max={60}
-            value={Math.round(targetMs / 60_000)}
-            onChange={e => {
-              const mins = parseInt(e.target.value) || 5
-              setPreset(mins * 60_000)
-            }}
-            className="w-full accent-white bg-slate-800 rounded-lg appearance-none h-1 cursor-pointer"
-          />
-        </div>
       </div>
 
       {/* Presets Grid */}
