@@ -89,7 +89,7 @@ function LinkForm({ onAdd, onClose }: { onAdd: (link: ShowLink) => Promise<void>
 
 type UploadStatus = 'idle' | 'uploading' | 'done' | 'error'
 
-function UploadForm({ classCode, onAdd, onClose }: { classCode: string; onAdd: (link: ShowLink) => Promise<void>; onClose: () => void }) {
+function UploadForm({ classCode, onAdd, onClose, onSwitchToLink }: { classCode: string; onAdd: (link: ShowLink) => Promise<void>; onClose: () => void; onSwitchToLink: () => void }) {
   const inputRef = useRef<HTMLInputElement>(null)
   const [file, setFile] = useState<File | null>(null)
   const [dragOver, setDragOver] = useState(false)
@@ -179,18 +179,43 @@ function UploadForm({ classCode, onAdd, onClose }: { classCode: string; onAdd: (
   if (sizeError) {
     return (
       <div className="space-y-3 mt-2">
-        <div className="rounded-2xl border border-amber-900 bg-amber-950/20 p-4 space-y-2">
-          <p className="text-xs font-bold text-amber-300">文件大小超出限制</p>
-          <p className="text-[11px] text-amber-500 leading-relaxed">
-            目前最大上传限制为 {MAX_UPLOAD_MB} MB。如需播放大型视频，建议使用 **链接** 模式添加直链。幻灯片可直接使用 OneDrive 嵌入分享。
-          </p>
+        <div className="rounded-2xl border border-amber-900 bg-amber-950/20 p-4 space-y-3">
+          <div className="space-y-1">
+            <p className="text-xs font-bold text-amber-300">文件大小超出限制</p>
+            <p className="text-[11px] text-amber-500 leading-relaxed">
+              该文件超过了 {MAX_UPLOAD_MB} MB 的上传上限，无法直接上传。请改用下方方法之一，通过「添加链接」引入该文件。
+            </p>
+          </div>
+          <div className="space-y-2 rounded-xl bg-slate-950/60 border border-amber-900/40 p-3">
+            <p className="text-[11px] font-bold text-amber-300">方法一：OneDrive 嵌入链接（推荐用于 PPT/PDF）</p>
+            <ol className="text-[11px] text-slate-300 leading-relaxed list-decimal list-inside space-y-0.5">
+              <li>登录 OneDrive，将文件上传到你的网盘</li>
+              <li>右键点击文件 → 选择「嵌入」(Embed)</li>
+              <li>复制弹出框中 <code className="text-amber-300">&lt;iframe&gt;</code> 代码里的 <code className="text-amber-300">src="..."</code> 链接</li>
+              <li>点击下方「切换到链接模式」，粘贴该链接</li>
+            </ol>
+          </div>
+          <div className="space-y-2 rounded-xl bg-slate-950/60 border border-amber-900/40 p-3">
+            <p className="text-[11px] font-bold text-amber-300">方法二：Google 幻灯片 / 云盘直链</p>
+            <p className="text-[11px] text-slate-300 leading-relaxed">
+              PPT 可用 Google Slides「发布到网上」获取嵌入链接；大型视频建议使用支持直链播放的云盘（如支持公开分享的网盘）获取文件直接地址。
+            </p>
+          </div>
         </div>
-        <button
-          onClick={() => setSizeError(false)}
-          className="w-full py-2 rounded-xl border border-slate-800 text-slate-400 hover:text-slate-200 hover:bg-slate-900 smooth-transition text-xs font-semibold"
-        >
-          重新选择文件
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => { setSizeError(false); setFile(null) }}
+            className="flex-1 py-2 rounded-xl border border-slate-800 text-slate-400 hover:text-slate-200 hover:bg-slate-900 smooth-transition text-xs font-semibold"
+          >
+            重新选择文件
+          </button>
+          <button
+            onClick={onSwitchToLink}
+            className="flex-1 py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-white smooth-transition text-xs font-semibold"
+          >
+            切换到链接模式
+          </button>
+        </div>
       </div>
     )
   }
@@ -465,7 +490,7 @@ export function AddDocPanel({ classCode, onAdd, onClose, onRefresh }: AddDocPane
       
       <div className="smooth-transition">
         {mode === 'link' && <LinkForm onAdd={onAdd} onClose={onClose} />}
-        {mode === 'upload' && <UploadForm classCode={classCode} onAdd={onAdd} onClose={onClose} />}
+        {mode === 'upload' && <UploadForm classCode={classCode} onAdd={onAdd} onClose={onClose} onSwitchToLink={() => setMode('link')} />}
         {mode === 'library' && <LibraryPanel classCode={classCode} onAdd={onAdd} onRefresh={onRefresh} />}
       </div>
     </div>
