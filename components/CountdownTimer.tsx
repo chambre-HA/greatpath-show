@@ -126,7 +126,7 @@ export function CountdownTimer() {
 
   const fraction = targetMs > 0 ? Math.max(0, Math.min(1, remaining / targetMs)) : 0
   const isDone = remaining === 0
-  const isLow = remaining > 0 && remaining <= 15_000
+  const isLow = remaining > 0 && remaining <= 60_000
 
   const setPreset = useCallback((ms: number) => {
     setTargetMs(ms)
