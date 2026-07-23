@@ -1,12 +1,13 @@
 'use client'
 
-import { ArrowLeft, HeartHandshake, MessageSquare, Presentation } from 'lucide-react'
+import { ArrowLeft, HeartHandshake, MessageSquare, Presentation, Sparkles } from 'lucide-react'
 import { CountdownTimer } from './CountdownTimer'
 
-export type ClassFunction = 'presentation' | 'dedication' | 'messages'
+export type ClassFunction = 'presentation' | 'dedication' | 'messages' | 'activities'
 
 const FUNCTIONS: { value: ClassFunction; label: string; icon: typeof Presentation; iconBg: string; iconColor: string }[] = [
   { value: 'presentation', label: '演示文稿', icon: Presentation, iconBg: 'bg-amber-950/40 border-amber-900/30', iconColor: 'text-amber-500' },
+  { value: 'activities', label: '活动展示', icon: Sparkles, iconBg: 'bg-violet-950/40 border-violet-900/30', iconColor: 'text-violet-400' },
   { value: 'dedication', label: '回向名单', icon: HeartHandshake, iconBg: 'bg-pink-950/40 border-pink-900/30', iconColor: 'text-pink-400' },
   { value: 'messages', label: '消息模板', icon: MessageSquare, iconBg: 'bg-teal-950/40 border-teal-900/30', iconColor: 'text-teal-400' },
 ]

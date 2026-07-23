@@ -6,6 +6,7 @@ import { Sidebar, type ClassFunction } from '@/components/Sidebar'
 import { Viewer } from '@/components/Viewer'
 import { DedicationPanel } from '@/components/DedicationPanel'
 import { MessagesPanel } from '@/components/MessagesPanel'
+import { ActivitiesSlideshow } from '@/components/ActivitiesSlideshow'
 import { getStore } from '@/lib/links-store'
 import type { ClassInfo, ShowLink } from '@/types'
 
@@ -131,6 +132,9 @@ export default function ClassPage() {
           onRemove={handleRemove}
           onRefresh={refresh}
         />
+      )}
+      {activeFunction === 'activities' && (
+        <ActivitiesSlideshow onToggleSidebar={() => setIsSidebarOpen(true)} />
       )}
       {activeFunction === 'dedication' && (
         <DedicationPanel classCode={classCode} onToggleSidebar={() => setIsSidebarOpen(true)} />

@@ -92,6 +92,19 @@ export interface DedicationGroup {
   order?: number
 }
 
+export interface OrgActivity {
+  id: string
+  title: string
+  description: string
+  date: string
+  timeStart: string | null
+  timeEnd: string | null
+  location: string
+  totalSpots: number | null
+  availableSpots: number | null
+  imageUrl: string | null
+}
+
 export interface ShowLink {
   id: string
   title: string
