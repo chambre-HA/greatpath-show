@@ -82,24 +82,44 @@ export function PdfViewer({ url, r2Key }: PdfViewerProps) {
   const zoomIn = useCallback(() => setZoomIdx((i) => Math.min(i + 1, ZOOM_STEPS.length - 1)), [])
   const zoomOut = useCallback(() => setZoomIdx((i) => Math.max(i - 1, 0)), [])
 
-  // Jump to top of the newly shown page, and re-arm the scroll-to-advance trigger below.
+  // Land at the top of the newly shown page (or its bottom, when arriving via scroll-up),
+  // and re-arm the scroll-to-advance trigger below.
   const wheelLockRef = useRef(false)
+  const landingRef = useRef<'top' | 'bottom'>('top')
   useEffect(() => {
     const el = containerRef.current
-    if (el) el.scrollTop = 0
+    if (el) {
+      if (landingRef.current === 'bottom') {
+        // Wait a frame so the newly rendered page has its real height before we scroll.
+        requestAnimationFrame(() => { el.scrollTop = el.scrollHeight })
+      } else {
+        el.scrollTop = 0
+      }
+    }
+    landingRef.current = 'top'
     wheelLockRef.current = false
   }, [page])
 
-  // Reaching the bottom of the current page and scrolling further advances to the next page.
+  // Reaching the bottom (top) of the current page and scrolling further advances (retreats)
+  // to the next (previous) page.
   const handleWheel = useCallback((e: React.WheelEvent<HTMLDivElement>) => {
     const el = containerRef.current
-    if (!el || e.deltaY <= 0 || wheelLockRef.current) return
-    const atBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 2
-    if (atBottom && page < numPages) {
-      wheelLockRef.current = true
-      next()
+    if (!el || wheelLockRef.current) return
+    if (e.deltaY > 0) {
+      const atBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 2
+      if (atBottom && page < numPages) {
+        wheelLockRef.current = true
+        next()
+      }
+    } else if (e.deltaY < 0) {
+      const atTop = el.scrollTop <= 2
+      if (atTop && page > 1) {
+        wheelLockRef.current = true
+        landingRef.current = 'bottom'
+        prev()
+      }
     }
-  }, [next, page, numPages])
+  }, [next, prev, page, numPages])
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
