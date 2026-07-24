@@ -82,6 +82,25 @@ export function PdfViewer({ url, r2Key }: PdfViewerProps) {
   const zoomIn = useCallback(() => setZoomIdx((i) => Math.min(i + 1, ZOOM_STEPS.length - 1)), [])
   const zoomOut = useCallback(() => setZoomIdx((i) => Math.max(i - 1, 0)), [])
 
+  // Jump to top of the newly shown page, and re-arm the scroll-to-advance trigger below.
+  const wheelLockRef = useRef(false)
+  useEffect(() => {
+    const el = containerRef.current
+    if (el) el.scrollTop = 0
+    wheelLockRef.current = false
+  }, [page])
+
+  // Reaching the bottom of the current page and scrolling further advances to the next page.
+  const handleWheel = useCallback((e: React.WheelEvent<HTMLDivElement>) => {
+    const el = containerRef.current
+    if (!el || e.deltaY <= 0 || wheelLockRef.current) return
+    const atBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 2
+    if (atBottom && page < numPages) {
+      wheelLockRef.current = true
+      next()
+    }
+  }, [next, page, numPages])
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return
@@ -107,7 +126,7 @@ export function PdfViewer({ url, r2Key }: PdfViewerProps) {
   }
 
   return (
-    <div ref={containerRef} className="relative w-full h-full bg-gray-900 overflow-auto">
+    <div ref={containerRef} onWheel={handleWheel} className="relative w-full h-full bg-gray-900 overflow-auto">
       <div className="min-h-full flex flex-col items-center py-6 pb-20">
         <Document
           file={sourceUrl}
