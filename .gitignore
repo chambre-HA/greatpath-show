@@ -11,7 +11,7 @@
 .turbo
 # Testing
 /coverage
-# Env / secrets — NEVER commit
+# Env / secrets — NEVER commit (templates *.example are kept)
 .env
 .env*.local
 # Local tooling
