@@ -119,7 +119,9 @@ export default function ClassPage() {
         onSelectFunction={handleSelectFunction}
         onBack={() => router.push('/')}
       />
-      {activeFunction === 'presentation' && (
+      {/* Kept mounted (instead of conditionally rendered) so switching away and back
+          doesn't tear down the PPT/PDF iframe and force a reload. */}
+      <div style={{ display: activeFunction === 'presentation' ? 'contents' : 'none' }}>
         <Viewer
           classCode={classCode}
           links={links}
@@ -132,7 +134,7 @@ export default function ClassPage() {
           onRemove={handleRemove}
           onRefresh={refresh}
         />
-      )}
+      </div>
       {activeFunction === 'activities' && (
         <ActivitiesSlideshow onToggleSidebar={() => setIsSidebarOpen(true)} />
       )}
