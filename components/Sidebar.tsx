@@ -1,26 +1,33 @@
 'use client'
 
-import { ArrowLeft, HeartHandshake, MessageSquare, Presentation, Sparkles } from 'lucide-react'
+import { useState } from 'react'
+import { ArrowLeft, ChevronDown, ChevronUp, HeartHandshake, MessageSquare, Presentation, QrCode, Sparkles } from 'lucide-react'
+import { QRCodeSVG } from 'qrcode.react'
 import { CountdownTimer } from './CountdownTimer'
+import type { SignInQr } from './SignInQrPanel'
 
-export type ClassFunction = 'presentation' | 'dedication' | 'messages' | 'activities'
+export type ClassFunction = 'presentation' | 'dedication' | 'messages' | 'activities' | 'signin'
 
 const FUNCTIONS: { value: ClassFunction; label: string; icon: typeof Presentation; iconBg: string; iconColor: string }[] = [
   { value: 'presentation', label: '演示文稿', icon: Presentation, iconBg: 'bg-amber-950/40 border-amber-900/30', iconColor: 'text-amber-500' },
   { value: 'activities', label: '活动展示', icon: Sparkles, iconBg: 'bg-violet-950/40 border-violet-900/30', iconColor: 'text-violet-400' },
   { value: 'dedication', label: '回向名单', icon: HeartHandshake, iconBg: 'bg-pink-950/40 border-pink-900/30', iconColor: 'text-pink-400' },
   { value: 'messages', label: '消息模板', icon: MessageSquare, iconBg: 'bg-teal-950/40 border-teal-900/30', iconColor: 'text-teal-400' },
+  { value: 'signin', label: '签到二维码', icon: QrCode, iconBg: 'bg-emerald-950/40 border-emerald-900/30', iconColor: 'text-emerald-400' },
 ]
 
 interface SidebarProps {
   className: string
   activeFunction: ClassFunction
   isOpen: boolean
+  signInQr?: SignInQr | null
   onSelectFunction: (fn: ClassFunction) => void
   onBack: () => void
 }
 
-export function Sidebar({ className, activeFunction, isOpen, onSelectFunction, onBack }: SidebarProps) {
+export function Sidebar({ className, activeFunction, isOpen, signInQr, onSelectFunction, onBack }: SidebarProps) {
+  const [qrCollapsed, setQrCollapsed] = useState(false)
+
   return (
     <aside className={`w-72 shrink-0 h-screen flex flex-col bg-gray-950 border-r border-gray-800/80 fixed md:relative z-45 transition-transform duration-300 ${
       isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
@@ -68,10 +75,37 @@ export function Sidebar({ className, activeFunction, isOpen, onSelectFunction, o
       </nav>
 
       {/* Timer — pinned at bottom */}
-      <div className="px-4 pt-2 pb-[50px] border-t border-gray-800/60 shrink-0 bg-gray-950/80">
+      <div className={`px-4 pt-2 border-t border-gray-800/60 shrink-0 bg-gray-950/80 ${signInQr ? 'pb-2' : 'pb-[50px]'}`}>
         <h2 className="px-3 text-[10px] uppercase font-bold tracking-wider text-slate-500 mb-1">计时器</h2>
         <CountdownTimer />
       </div>
+
+      {/* Sign-in QR — small persistent copy so latecomers can scan while the
+          presentation (or any other function) is on screen. */}
+      {signInQr && (
+        <div className="px-4 py-3 border-t border-gray-800/60 shrink-0 bg-gray-950/80">
+          <button
+            onClick={() => setQrCollapsed(prev => !prev)}
+            className="w-full flex items-center justify-between px-3 text-slate-500 hover:text-slate-300 smooth-transition"
+            aria-expanded={!qrCollapsed}
+          >
+            <h2 className="text-[10px] uppercase font-bold tracking-wider">签到二维码</h2>
+            {qrCollapsed ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+          </button>
+          {!qrCollapsed && (
+            <button
+              onClick={() => onSelectFunction('signin')}
+              className="w-full flex items-center gap-3 px-3 py-1.5 mt-1.5 rounded-xl hover:bg-gray-900/60 smooth-transition"
+              title="点击放大"
+            >
+              <span className="flex-1 text-[11px] text-slate-400 text-left leading-snug">{signInQr.label}</span>
+              <div className="bg-white p-1.5 rounded-lg shrink-0">
+                <QRCodeSVG value={signInQr.url} size={72} level="M" />
+              </div>
+            </button>
+          )}
+        </div>
+      )}
     </aside>
   )
 }

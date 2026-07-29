@@ -6,6 +6,7 @@ import { Sidebar, type ClassFunction } from '@/components/Sidebar'
 import { Viewer } from '@/components/Viewer'
 import { DedicationPanel } from '@/components/DedicationPanel'
 import { MessagesPanel } from '@/components/MessagesPanel'
+import { SignInQrPanel, type SignInQr } from '@/components/SignInQrPanel'
 import { ActivitiesSlideshow } from '@/components/ActivitiesSlideshow'
 import { getStore } from '@/lib/links-store'
 import type { ClassInfo, ShowLink } from '@/types'
@@ -20,6 +21,7 @@ export default function ClassPage() {
   const [classInfo, setClassInfo] = useState<ClassInfo | null>(null)
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const [activeFunction, setActiveFunction] = useState<ClassFunction>('presentation')
+  const [signInQr, setSignInQr] = useState<SignInQr | null>(null)
   const initializedRef = useRef(false)
 
   const refresh = useCallback(async () => {
@@ -116,6 +118,7 @@ export default function ClassPage() {
         className={classInfo?.name || classCode}
         activeFunction={activeFunction}
         isOpen={isSidebarOpen}
+        signInQr={signInQr}
         onSelectFunction={handleSelectFunction}
         onBack={() => router.push('/')}
       />
@@ -143,6 +146,14 @@ export default function ClassPage() {
       )}
       {activeFunction === 'messages' && (
         <MessagesPanel classCode={classCode} onToggleSidebar={() => setIsSidebarOpen(true)} />
+      )}
+      {activeFunction === 'signin' && (
+        <SignInQrPanel
+          classCode={classCode}
+          classDisplayName={classInfo?.name}
+          onToggleSidebar={() => setIsSidebarOpen(true)}
+          onQrChange={setSignInQr}
+        />
       )}
     </main>
   )
