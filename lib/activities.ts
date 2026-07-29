@@ -24,6 +24,66 @@ interface ActivityRow {
   is_active: boolean
 }
 
+const WEEKDAY_NAMES: Record<string, number> = {
+  周日: 0, 星期日: 0,
+  周一: 1, 星期一: 1,
+  周二: 2, 星期二: 2,
+  周三: 3, 星期三: 3,
+  周四: 4, 星期四: 4,
+  周五: 5, 星期五: 5,
+  周六: 6, 星期六: 6,
+}
+
+// Mirrors the source site's date resolution: a literal date passes through,
+// a recurring weekday label (e.g. "每周二") resolves to its next occurrence
+// in Asia/Shanghai (today counts if it's already that weekday).
+function resolveUpcomingDate(dateSchedule: string): string | null {
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateSchedule)) return dateSchedule
+
+  let weekday: number | null = null
+  for (const [label, value] of Object.entries(WEEKDAY_NAMES)) {
+    if (dateSchedule.includes(label)) {
+      weekday = value
+      break
+    }
+  }
+  if (weekday === null) return null
+
+  const now = new Date()
+  const shanghaiNow = new Date(now.getTime() + (8 * 60 + now.getTimezoneOffset()) * 60 * 1000)
+  const currentWeekday = shanghaiNow.getDay()
+  let daysUntil = weekday - currentWeekday
+  if (daysUntil < 0) daysUntil += 7
+
+  const target = new Date(shanghaiNow)
+  target.setDate(shanghaiNow.getDate() + daysUntil)
+  const year = target.getFullYear()
+  const month = String(target.getMonth() + 1).padStart(2, '0')
+  const day = String(target.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+async function fetchRegistrationCounts(
+  dates: { id: string; date: string }[]
+): Promise<Record<string, number>> {
+  if (dates.length === 0) return {}
+
+  const res = await fetch(`${SUPABASE_URL}/functions/v1/get-registration-counts`, {
+    method: 'POST',
+    headers: {
+      apikey: SUPABASE_ANON_KEY,
+      Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ dates }),
+    next: { revalidate: 300 },
+  })
+
+  if (!res.ok) return {}
+  const data = await res.json()
+  return data?.counts || {}
+}
+
 export async function fetchOrgActivities(): Promise<OrgActivity[]> {
   const url = `${SUPABASE_URL}/rest/v1/activities?select=id,name_zh,name_en,description_zh,description_en,date_schedule,time_start,time_end,location_zh,location_en,total_spots,available_spots,image_url,is_active&is_active=eq.true&order=date_schedule.asc`
   const res = await fetch(url, {
@@ -40,16 +100,28 @@ export async function fetchOrgActivities(): Promise<OrgActivity[]> {
 
   const rows: ActivityRow[] = await res.json()
 
-  return rows.map(row => ({
-    id: row.id,
-    title: row.name_zh || row.name_en || '未命名活动',
-    description: row.description_zh || row.description_en || '',
-    date: row.date_schedule,
-    timeStart: row.time_start,
-    timeEnd: row.time_end,
-    location: row.location_zh || row.location_en || '',
-    totalSpots: row.total_spots,
-    availableSpots: row.available_spots,
-    imageUrl: row.image_url,
-  }))
+  const upcomingDates = rows.map(row => ({ id: row.id, date: resolveUpcomingDate(row.date_schedule) }))
+  const validDates = upcomingDates.filter(
+    (d): d is { id: string; date: string } => d.date !== null
+  )
+  const counts = await fetchRegistrationCounts(validDates)
+
+  return rows.map((row, i) => {
+    const upcomingDate = upcomingDates[i].date
+    const registered = upcomingDate ? counts[`${row.id}_${upcomingDate}`] ?? 0 : 0
+    const availableSpots = row.total_spots == null ? null : Math.max(0, row.total_spots - registered)
+
+    return {
+      id: row.id,
+      title: row.name_zh || row.name_en || '未命名活动',
+      description: row.description_zh || row.description_en || '',
+      date: row.date_schedule,
+      timeStart: row.time_start,
+      timeEnd: row.time_end,
+      location: row.location_zh || row.location_en || '',
+      totalSpots: row.total_spots,
+      availableSpots,
+      imageUrl: row.image_url,
+    }
+  })
 }
