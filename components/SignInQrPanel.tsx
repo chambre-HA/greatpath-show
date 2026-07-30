@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Menu, QrCode } from 'lucide-react'
 import { QRCodeSVG } from 'qrcode.react'
+import { ClassCheckinRoster } from './ClassCheckinRoster'
+import type { SessionType } from '@/lib/classCheckins'
 
 const GREATPATH_BASE_URL =
   process.env.NEXT_PUBLIC_GREATPATH_URL || 'https://greatpath-greatbusiness.com'
@@ -82,6 +84,16 @@ export function SignInQrPanel({
   useEffect(() => {
     onQrChange?.(signInQr)
   }, [signInQr, onQrChange])
+
+  // Mirrors the mapping greatpath's own self-serve check-in page uses: a
+  // groupless (全班) scan is always 定课 (there's no QR path for 班修 yet —
+  // that's host-assist only), a specific group is 组修. AM/PM is a live
+  // read of the clock, not something recorded in the URL.
+  const sessionType: SessionType = scope === 'all' ? '定课' : '组修'
+  const sessionPeriod = sessionType === '定课' ? (new Date().getHours() < 12 ? 'morning' : 'evening') : null
+  const groupNumber = scope === 'all' ? null : Number(scope)
+  const sessionLabel =
+    sessionType === '定课' ? `${sessionPeriod === 'morning' ? '上午' : '晚间'}定课` : `组修 · ${scope} 组`
 
   return (
     <div className="flex-1 min-w-0 h-screen overflow-y-auto">
@@ -169,6 +181,15 @@ export function SignInQrPanel({
                 二维码已同步显示在侧栏，切换到其他功能后迟到的学员仍可扫码
               </p>
             </div>
+
+            <ClassCheckinRoster
+              className={className.trim()}
+              sessionDate={date}
+              sessionType={sessionType}
+              sessionPeriod={sessionPeriod}
+              groupNumber={groupNumber}
+              sessionLabel={sessionLabel}
+            />
           </div>
         ) : (
           <div className="flex flex-col items-center gap-3 py-16 text-gray-600">
