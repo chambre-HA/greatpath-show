@@ -110,7 +110,7 @@ export default function ClassPage() {
       {/* Mobile Backdrop */}
       {isSidebarOpen && (
         <div
-          className="fixed inset-0 z-40 bg-black/60 md:hidden transition-opacity"
+          className="fixed inset-0 z-40 bg-black/60 [@media(min-width:768px)_and_(min-height:640px)]:hidden transition-opacity"
           onClick={() => setIsSidebarOpen(false)}
         />
       )}

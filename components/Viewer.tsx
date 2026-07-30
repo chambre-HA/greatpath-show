@@ -81,7 +81,7 @@ export function Viewer({ classCode, links, openTabIds, activeTabId, onToggleSide
       <div className="flex items-stretch bg-gray-950 border-b border-gray-800/80 shrink-0">
         <button
           onClick={onToggleSidebar}
-          className="p-3 text-gray-400 hover:text-white md:hidden border-r border-gray-800 shrink-0"
+          className="p-3 text-gray-400 hover:text-white [@media(min-width:768px)_and_(min-height:640px)]:hidden border-r border-gray-800 shrink-0"
           aria-label="Open sidebar"
         >
           <Menu size={18} />

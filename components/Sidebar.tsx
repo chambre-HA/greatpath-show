@@ -29,8 +29,8 @@ export function Sidebar({ className, activeFunction, isOpen, signInQr, onSelectF
   const [qrCollapsed, setQrCollapsed] = useState(false)
 
   return (
-    <aside className={`w-72 shrink-0 h-screen flex flex-col bg-gray-950 border-r border-gray-800/80 fixed md:relative z-45 transition-transform duration-300 ${
-      isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
+    <aside className={`w-72 shrink-0 h-screen flex flex-col bg-gray-950 border-r border-gray-800/80 fixed [@media(min-width:768px)_and_(min-height:640px)]:relative z-45 transition-transform duration-300 ${
+      isOpen ? 'translate-x-0' : '-translate-x-full [@media(min-width:768px)_and_(min-height:640px)]:translate-x-0'
     }`}>
       {/* Header */}
       <div className="p-4 border-b border-gray-800/60 shrink-0 bg-gray-950/40">
