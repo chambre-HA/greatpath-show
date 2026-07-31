@@ -2,10 +2,14 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Calendar, MapPin, Menu, Pause, Play, Users, Volume1, Volume2, VolumeX } from 'lucide-react'
+import { QRCodeSVG } from 'qrcode.react'
 import type { OrgActivity } from '@/types'
 
 const SLIDE_MS = 15_000
 const TICK_MS = 100
+
+const GREATPATH_BASE_URL =
+  process.env.NEXT_PUBLIC_GREATPATH_URL || 'https://greatpath-greatbusiness.com'
 
 export function ActivitiesSlideshow({ onToggleSidebar }: { onToggleSidebar?: () => void }) {
   const [activities, setActivities] = useState<OrgActivity[]>([])
@@ -135,6 +139,15 @@ export function ActivitiesSlideshow({ onToggleSidebar }: { onToggleSidebar?: () 
               <div className="absolute inset-0 bg-gradient-to-br from-violet-950 to-gray-900" />
             )}
             <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
+
+            <div className="absolute top-8 right-3 sm:top-10 sm:right-5 flex flex-col items-center gap-1.5 bg-white rounded-xl p-2 sm:p-2.5 shadow-2xl">
+              <QRCodeSVG
+                value={`${GREATPATH_BASE_URL}/activity/${current.id}`}
+                size={72}
+                level="M"
+              />
+              <span className="text-[10px] font-bold tracking-widest text-gray-700">扫码报名</span>
+            </div>
 
             <div className="absolute inset-x-0 bottom-0 p-5 sm:p-8 space-y-2.5">
               <h2 className="text-xl sm:text-3xl font-extrabold text-white leading-tight drop-shadow-sm">
