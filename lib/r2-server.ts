@@ -5,9 +5,10 @@ import {
   PutObjectCommand,
   S3Client,
 } from '@aws-sdk/client-s3'
-import type { ClassInfo, DedicationGroup, DedicationPerson, MessageTemplate, ShowLink } from '@/types'
+import type { ClassInfo, ClassSignin, DedicationGroup, DedicationPerson, MessageTemplate, School, ShowLink } from '@/types'
 
 const CLASSES_KEY = '_classes.json'
+const SCHOOLS_KEY = '_schools.json'
 const INDEX_KEY = 'links.json'
 const MESSAGES_KEY = 'messages.json'
 const DEDICATION_KEY = 'dedication.json'
@@ -76,12 +77,38 @@ function mergeLink(base: ShowLink, stored?: ShowLink): ShowLink {
   }
 }
 
+// R2 occasionally answers a perfectly valid request with a 5xx InternalError
+// ("We encountered an internal error. Please try again."). A single blip on a
+// metadata write would surface to the admin as a failed action, so retry the
+// small JSON reads/writes a couple of times before giving up.
+function isTransientR2Error(e: unknown): boolean {
+  const status = (e as { $metadata?: { httpStatusCode?: number } })?.$metadata?.httpStatusCode
+  const name = (e as { name?: string })?.name
+  return (status !== undefined && status >= 500) || name === 'InternalError' || name === 'SlowDown'
+}
+
+async function withRetry<T>(op: () => Promise<T>, attempts = 3): Promise<T> {
+  let lastError: unknown
+  for (let i = 0; i < attempts; i++) {
+    try {
+      return await op()
+    } catch (e) {
+      lastError = e
+      if (!isTransientR2Error(e)) throw e
+      await new Promise(resolve => setTimeout(resolve, 150 * 2 ** i))
+    }
+  }
+  throw lastError
+}
+
 async function getJson<T>(client: S3Client, key: string, fallback: T): Promise<T> {
   try {
-    const out = await client.send(new GetObjectCommand({ Bucket: bucket(), Key: key }))
-    const text = await out.Body?.transformToString()
-    if (!text) return fallback
-    return JSON.parse(text) as T
+    return await withRetry(async () => {
+      const out = await client.send(new GetObjectCommand({ Bucket: bucket(), Key: key }))
+      const text = await out.Body?.transformToString()
+      if (!text) return fallback
+      return JSON.parse(text) as T
+    })
   } catch (e: unknown) {
     if ((e as { name?: string })?.name === 'NoSuchKey') return fallback
     if ((e as { $metadata?: { httpStatusCode?: number } })?.$metadata?.httpStatusCode === 404) return fallback
@@ -90,12 +117,13 @@ async function getJson<T>(client: S3Client, key: string, fallback: T): Promise<T
 }
 
 async function putJson(client: S3Client, key: string, value: unknown): Promise<void> {
-  await client.send(new PutObjectCommand({
+  const body = JSON.stringify(value, null, 2)
+  await withRetry(() => client.send(new PutObjectCommand({
     Bucket: bucket(),
     Key: key,
-    Body: JSON.stringify(value, null, 2),
+    Body: body,
     ContentType: 'application/json',
-  }))
+  })))
 }
 
 function normalizeClassCode(code: string): string {
@@ -113,6 +141,7 @@ function normalizeClassInfo(info: Pick<ClassInfo, 'code'> & Partial<ClassInfo>):
     code,
     name: normalizeClassName(info.name, code),
     createdAt: info.createdAt ?? new Date().toISOString(),
+    schoolId: info.schoolId?.trim() || undefined,
   }
 }
 
@@ -156,6 +185,9 @@ export async function updateClass(info: ClassInfo): Promise<void> {
   classes[index] = {
     ...classes[index],
     name: next.name,
+    // `schoolId: undefined` on the way in means "unassign", so this is a
+    // straight overwrite rather than a merge.
+    schoolId: next.schoolId,
   }
   await putJson(client, CLASSES_KEY, classes)
 }
@@ -164,6 +196,71 @@ export async function deleteClass(code: string): Promise<void> {
   const client = getClient()
   const classes = await listClasses()
   await putJson(client, CLASSES_KEY, classes.filter(c => c.code !== code))
+}
+
+// ── 学堂 sign-in links ──────────────────────────────────────────────────────
+
+function normalizeSchool(school: Partial<School> & Pick<School, 'name' | 'url'>): School {
+  return {
+    id: school.id?.trim() || crypto.randomUUID(),
+    name: school.name.trim(),
+    url: school.url.trim(),
+    passcode: (school.passcode ?? '').trim(),
+    updatedAt: new Date().toISOString(),
+  }
+}
+
+export async function listSchools(): Promise<School[]> {
+  const client = getClient()
+  const schools = await getJson<School[]>(client, SCHOOLS_KEY, [])
+  return schools.filter(s => s && s.id).sort((a, b) => a.name.localeCompare(b.name, 'zh'))
+}
+
+/** Creates the school when `id` is absent or unknown, otherwise overwrites it. */
+export async function saveSchool(school: Partial<School> & Pick<School, 'name' | 'url'>): Promise<School> {
+  const next = normalizeSchool(school)
+  if (!next.name) throw new Error('学堂名称不能为空')
+  if (!/^https?:\/\//i.test(next.url)) throw new Error('签到链接必须以 http(s):// 开头')
+
+  const client = getClient()
+  const schools = await listSchools()
+  const index = schools.findIndex(s => s.id === next.id)
+  if (index < 0) schools.push(next)
+  else schools[index] = next
+  await putJson(client, SCHOOLS_KEY, schools)
+  return next
+}
+
+/** Also unassigns the school from any class pointing at it. */
+export async function deleteSchool(id: string): Promise<void> {
+  const client = getClient()
+  const schools = await listSchools()
+  await putJson(client, SCHOOLS_KEY, schools.filter(s => s.id !== id))
+
+  const classes = await listClasses()
+  if (classes.some(c => c.schoolId === id)) {
+    await putJson(
+      client,
+      CLASSES_KEY,
+      classes.map(c => (c.schoolId === id ? { ...c, schoolId: undefined } : c)),
+    )
+  }
+}
+
+/** Null when the class is unknown, unassigned, or points at a deleted school. */
+export async function getClassSignin(classCode: string): Promise<ClassSignin | null> {
+  const classes = await listClasses()
+  const cls = classes.find(c => c.code === normalizeClassCode(classCode))
+  if (!cls?.schoolId) return null
+
+  const school = (await listSchools()).find(s => s.id === cls.schoolId)
+  if (!school) return null
+  return {
+    schoolId: school.id,
+    schoolName: school.name,
+    url: school.url,
+    passcode: school.passcode,
+  }
 }
 
 // ── Link management ────────────────────────────────────────────────────────

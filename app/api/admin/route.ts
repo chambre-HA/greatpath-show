@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { addClass, addLink, deleteClass, listAllLibraryLinks, listAllLinks, listClasses, listGlobalLibrary, listHiddenLinks, purgeLink, removeLink, reorderLinks, restoreLink, updateClass, updateLink } from '@/lib/r2-server'
+import { addClass, addLink, deleteClass, deleteSchool, listAllLibraryLinks, listAllLinks, listClasses, listGlobalLibrary, listHiddenLinks, listSchools, purgeLink, removeLink, reorderLinks, restoreLink, saveSchool, updateClass, updateLink } from '@/lib/r2-server'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -23,7 +23,24 @@ export async function POST(req: Request) {
         await deleteClass(body.code)
         return NextResponse.json({ ok: true })
       case 'updateClass':
-        await updateClass({ code: body.code, name: body.name, createdAt: body.createdAt ?? new Date().toISOString() })
+        await updateClass({
+          code: body.code,
+          name: body.name,
+          createdAt: body.createdAt ?? new Date().toISOString(),
+          schoolId: body.schoolId ?? undefined,
+        })
+        return NextResponse.json({ ok: true })
+      case 'listSchools':
+        return NextResponse.json(await listSchools())
+      case 'saveSchool':
+        return NextResponse.json(await saveSchool({
+          id: body.id,
+          name: body.name,
+          url: body.url,
+          passcode: body.passcode,
+        }))
+      case 'deleteSchool':
+        await deleteSchool(body.id)
         return NextResponse.json({ ok: true })
       case 'listLinks':
         return NextResponse.json(await listAllLinks(body.code))

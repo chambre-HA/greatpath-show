@@ -1,10 +1,10 @@
 'use client'
 
 import { useState } from 'react'
-import { ArrowLeft, ChevronDown, ChevronUp, HeartHandshake, MessageSquare, Presentation, QrCode, Sparkles } from 'lucide-react'
+import { ArrowLeft, ChevronDown, ChevronUp, HeartHandshake, MessageSquare, Presentation, Sparkles } from 'lucide-react'
 import { QRCodeSVG } from 'qrcode.react'
 import { CountdownTimer } from './CountdownTimer'
-import type { SignInQr } from './SignInQrPanel'
+import type { ClassSignin } from '@/types'
 
 export type ClassFunction = 'presentation' | 'dedication' | 'messages' | 'activities' | 'signin'
 
@@ -13,19 +13,18 @@ const FUNCTIONS: { value: ClassFunction; label: string; icon: typeof Presentatio
   { value: 'activities', label: '活动展示', icon: Sparkles, iconBg: 'bg-violet-950/40 border-violet-900/30', iconColor: 'text-violet-400' },
   { value: 'dedication', label: '回向名单', icon: HeartHandshake, iconBg: 'bg-pink-950/40 border-pink-900/30', iconColor: 'text-pink-400' },
   { value: 'messages', label: '消息模板', icon: MessageSquare, iconBg: 'bg-teal-950/40 border-teal-900/30', iconColor: 'text-teal-400' },
-  { value: 'signin', label: '签到二维码', icon: QrCode, iconBg: 'bg-emerald-950/40 border-emerald-900/30', iconColor: 'text-emerald-400' },
 ]
 
 interface SidebarProps {
   className: string
   activeFunction: ClassFunction
   isOpen: boolean
-  signInQr?: SignInQr | null
+  signin?: ClassSignin | null
   onSelectFunction: (fn: ClassFunction) => void
   onBack: () => void
 }
 
-export function Sidebar({ className, activeFunction, isOpen, signInQr, onSelectFunction, onBack }: SidebarProps) {
+export function Sidebar({ className, activeFunction, isOpen, signin, onSelectFunction, onBack }: SidebarProps) {
   const [qrCollapsed, setQrCollapsed] = useState(false)
 
   return (
@@ -75,14 +74,15 @@ export function Sidebar({ className, activeFunction, isOpen, signInQr, onSelectF
       </nav>
 
       {/* Timer — pinned at bottom */}
-      <div className={`px-4 pt-2 border-t border-gray-800/60 shrink-0 bg-gray-950/80 ${signInQr ? 'pb-2' : 'pb-[50px]'}`}>
+      <div className={`px-4 pt-2 border-t border-gray-800/60 shrink-0 bg-gray-950/80 ${signin ? 'pb-2' : 'pb-[50px]'}`}>
         <h2 className="px-3 text-[10px] uppercase font-bold tracking-wider text-slate-500 mb-1">计时器</h2>
         <CountdownTimer />
       </div>
 
-      {/* Sign-in QR — small persistent copy so latecomers can scan while the
-          presentation (or any other function) is on screen. */}
-      {signInQr && (
+      {/* Sign-in QR — the only entry point for sign-in now: always on screen
+          (collapsible) so latecomers can scan during any function, and tapping
+          it opens the enlarged view. */}
+      {signin && (
         <div className="px-4 py-3 border-t border-gray-800/60 shrink-0 bg-gray-950/80">
           <button
             onClick={() => setQrCollapsed(prev => !prev)}
@@ -98,9 +98,22 @@ export function Sidebar({ className, activeFunction, isOpen, signInQr, onSelectF
               className="w-full flex items-center gap-3 px-3 py-1.5 mt-1.5 rounded-xl hover:bg-gray-900/60 smooth-transition"
               title="点击放大"
             >
-              <span className="flex-1 text-[11px] text-slate-400 text-left leading-snug">{signInQr.label}</span>
+              <span className="flex-1 text-left leading-snug min-w-0">
+                {signin.passcode ? (
+                  <>
+                    <span className="block text-[10px] uppercase font-bold tracking-wider text-slate-500">
+                      {signin.schoolName || '口令'}
+                    </span>
+                    <span className="block text-base font-bold text-emerald-300 tracking-[0.15em]">
+                      {signin.passcode}
+                    </span>
+                  </>
+                ) : (
+                  <span className="block text-[11px] text-slate-400">{signin.schoolName}</span>
+                )}
+              </span>
               <div className="bg-white p-1.5 rounded-lg shrink-0">
-                <QRCodeSVG value={signInQr.url} size={72} level="M" />
+                <QRCodeSVG value={signin.url} size={72} level="M" />
               </div>
             </button>
           )}

@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback, useRef } from 'react'
 import { ChevronRight, Copy, EllipsisVertical, FileText, Library, Link2, Pencil, Presentation, Plus, RotateCcw, Save, ShieldAlert, Trash2, X, ArrowUp, ArrowDown, Shield, LogOut, Check, School } from 'lucide-react'
 import { cloneLink, validateLinkInput } from '@/lib/links-store'
 import { AddDocPanel } from '@/components/AddDocPanel'
-import type { ClassInfo, ShowLink } from '@/types'
+import type { ClassInfo, School as SchoolInfo, ShowLink } from '@/types'
 
 // ── API helpers ──────────────────────────────────────────────────────────────
 
@@ -505,6 +505,209 @@ interface LibraryOwner {
 
 type LibraryItem = ShowLink & { owners: LibraryOwner[] }
 
+// ── Schools (学堂 sign-in links) ─────────────────────────────────────────────
+
+// greatpath issues one fixed check-in link per 学堂, with a passcode staff can
+// rotate on their side. We only mirror those values here so classes can point
+// at them — nothing is generated on this end.
+function SchoolsManager({
+  password,
+  schools,
+  classes,
+  onChanged,
+}: {
+  password: string
+  schools: SchoolInfo[]
+  classes: ClassInfo[]
+  onChanged: () => Promise<void>
+}) {
+  const [name, setName] = useState('')
+  const [url, setUrl] = useState('')
+  const [passcode, setPasscode] = useState('')
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [busy, setBusy] = useState(false)
+  const [copiedId, setCopiedId] = useState<string | null>(null)
+
+  function resetForm() {
+    setEditingId(null)
+    setName('')
+    setUrl('')
+    setPasscode('')
+  }
+
+  function startEdit(school: SchoolInfo) {
+    setEditingId(school.id)
+    setName(school.name)
+    setUrl(school.url)
+    setPasscode(school.passcode)
+    setError(null)
+  }
+
+  async function handleSave(e: React.FormEvent) {
+    e.preventDefault()
+    if (!name.trim() || !url.trim()) return
+    setBusy(true)
+    setError(null)
+    try {
+      await adminPost(password, {
+        action: 'saveSchool',
+        id: editingId ?? undefined,
+        name: name.trim(),
+        url: url.trim(),
+        passcode: passcode.trim(),
+      })
+      resetForm()
+      await onChanged()
+    } catch (e) {
+      setError(e instanceof Error ? e.message : '保存学堂失败')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function handleDelete(school: SchoolInfo) {
+    const assigned = classes.filter(c => c.schoolId === school.id)
+    const warning = assigned.length
+      ? `确定删除「${school.name}」？${assigned.length} 个班级（${assigned.map(c => c.name).join('、')}）将失去签到二维码。`
+      : `确定删除「${school.name}」？`
+    if (!confirm(warning)) return
+    try {
+      await adminPost(password, { action: 'deleteSchool', id: school.id })
+      if (editingId === school.id) resetForm()
+      await onChanged()
+    } catch (e) {
+      setError(e instanceof Error ? e.message : '删除学堂失败')
+    }
+  }
+
+  async function copy(school: SchoolInfo) {
+    await navigator.clipboard.writeText(school.url)
+    setCopiedId(school.id)
+    setTimeout(() => setCopiedId(null), 1500)
+  }
+
+  return (
+    <div className="max-w-2xl space-y-6">
+      <div className="border-b border-slate-800/60 pb-4">
+        <h2 className="text-lg font-extrabold text-white flex items-center gap-2">
+          <Link2 size={16} className="text-emerald-400" />
+          <span>学堂签到链接</span>
+        </h2>
+        <p className="text-xs text-slate-500 mt-1">
+          从 Greatpath 后台复制每个学堂的签到链接与口令，班级关联学堂后即可在前台显示二维码。换口令后请回来更新。
+        </p>
+      </div>
+
+      <form onSubmit={handleSave} className="space-y-2 p-4 rounded-2xl border border-slate-800 bg-slate-950/60">
+        <p className="text-[10px] uppercase font-bold tracking-wider text-slate-500">
+          {editingId ? '编辑学堂' : '新增学堂'}
+        </p>
+        <input
+          type="text"
+          placeholder="学堂名称（如：新加坡悠然学堂）"
+          value={name}
+          onChange={e => setName(e.target.value)}
+          className="w-full px-3 py-2 text-xs rounded-xl bg-slate-950 border border-slate-800 text-slate-100 placeholder-slate-650 focus:outline-none focus:border-emerald-500"
+        />
+        <input
+          type="text"
+          placeholder="签到链接 https://greatpath-greatbusiness.com/checkin/..."
+          value={url}
+          onChange={e => setUrl(e.target.value)}
+          spellCheck={false}
+          className="w-full px-3 py-2 text-xs rounded-xl bg-slate-950 border border-slate-800 text-slate-100 placeholder-slate-650 font-mono focus:outline-none focus:border-emerald-500"
+        />
+        <input
+          type="text"
+          placeholder="口令（如：989122）"
+          value={passcode}
+          onChange={e => setPasscode(e.target.value)}
+          className="w-full px-3 py-2 text-xs rounded-xl bg-slate-950 border border-slate-800 text-slate-100 placeholder-slate-650 font-mono tracking-widest focus:outline-none focus:border-emerald-500"
+        />
+        {error && (
+          <p className="text-[10px] text-rose-400 bg-rose-950/20 py-1.5 px-3 rounded-lg border border-rose-900/30">{error}</p>
+        )}
+        <div className="flex gap-2">
+          <button
+            type="submit"
+            disabled={busy || !name.trim() || !url.trim()}
+            className="flex-1 flex items-center justify-center gap-1 py-2 text-xs font-bold rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white disabled:opacity-40 active:scale-[0.98] transition-all"
+          >
+            <Save size={13} />
+            <span>{editingId ? '保存修改' : '添加学堂'}</span>
+          </button>
+          {editingId && (
+            <button
+              type="button"
+              onClick={resetForm}
+              className="px-4 py-2 text-xs font-bold rounded-xl border border-slate-800 text-slate-400 hover:text-white hover:bg-slate-900"
+            >
+              取消
+            </button>
+          )}
+        </div>
+      </form>
+
+      <ul className="space-y-2">
+        {schools.length === 0 && (
+          <li className="px-3 py-6 text-xs text-slate-500 italic text-center">暂无学堂。</li>
+        )}
+        {schools.map(school => {
+          const assigned = classes.filter(c => c.schoolId === school.id)
+          return (
+            <li key={school.id} className="p-4 rounded-2xl border border-slate-800 bg-slate-950/40 space-y-2">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-sm font-bold text-white">{school.name}</p>
+                  <p className="text-[10px] text-slate-500 mt-0.5">
+                    {assigned.length ? `已关联 ${assigned.length} 个班级：${assigned.map(c => c.name).join('、')}` : '暂无班级关联'}
+                  </p>
+                </div>
+                <div className="flex items-center gap-1 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => copy(school)}
+                    className="p-1.5 rounded-lg text-slate-500 hover:text-slate-200 hover:bg-slate-900"
+                    aria-label="复制链接"
+                  >
+                    {copiedId === school.id ? <Check size={13} className="text-emerald-400" /> : <Copy size={13} />}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => startEdit(school)}
+                    className="p-1.5 rounded-lg text-slate-500 hover:text-slate-200 hover:bg-slate-900"
+                    aria-label="编辑学堂"
+                  >
+                    <Pencil size={13} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleDelete(school)}
+                    className="p-1.5 rounded-lg text-slate-500 hover:text-rose-500 hover:bg-rose-950/20"
+                    aria-label="删除学堂"
+                  >
+                    <Trash2 size={13} />
+                  </button>
+                </div>
+              </div>
+              <p className="text-[11px] font-mono text-slate-400 break-all bg-slate-950 border border-slate-800/60 rounded-lg px-2.5 py-1.5">
+                {school.url}
+              </p>
+              <p className="text-[11px] text-slate-500">
+                口令{' '}
+                <span className="font-mono tracking-widest text-emerald-300 text-sm">
+                  {school.passcode || '未设置'}
+                </span>
+              </p>
+            </li>
+          )
+        })}
+      </ul>
+    </div>
+  )
+}
+
 function SharedLibraryManager({ password }: { password: string }) {
   const [items, setItems] = useState<LibraryItem[]>([])
   const [loading, setLoading] = useState(true)
@@ -628,8 +831,10 @@ export default function AdminPage() {
   const [authBusy, setAuthBusy] = useState(false)
 
   const [classes, setClasses] = useState<ClassInfo[]>([])
+  const [schools, setSchools] = useState<SchoolInfo[]>([])
   const [selectedCode, setSelectedCode] = useState<string | null>(null)
   const [showLibrary, setShowLibrary] = useState(false)
+  const [showSchools, setShowSchools] = useState(false)
   const [addingClass, setAddingClass] = useState(false)
   const [newCode, setNewCode] = useState('')
   const [newName, setNewName] = useState('')
@@ -639,11 +844,43 @@ export default function AdminPage() {
   const [editClassName, setEditClassName] = useState('')
 
   const selectedClass = classes.find(c => c.code === selectedCode) ?? null
+  const assignedSchool = schools.find(s => s.id === selectedClass?.schoolId) ?? null
 
   const loadClasses = useCallback(async (pw: string) => {
     const data = await adminPost(pw, { action: 'listClasses' })
     setClasses(Array.isArray(data) ? data : [])
   }, [])
+
+  const loadSchools = useCallback(async (pw: string) => {
+    const data = await adminPost(pw, { action: 'listSchools' })
+    setSchools(Array.isArray(data) ? data : [])
+  }, [])
+
+  // The schools manager shows class assignments, and the class panel shows the
+  // school's link, so both lists are refreshed together after any change.
+  const reloadAll = useCallback(async () => {
+    await Promise.all([loadClasses(password), loadSchools(password)])
+  }, [loadClasses, loadSchools, password])
+
+  // Assigning is an update on the class record, not on the school.
+  async function handleAssignSchool(cls: ClassInfo, schoolId: string) {
+    setClassBusy(true)
+    setClassError(null)
+    try {
+      await adminPost(password, {
+        action: 'updateClass',
+        code: cls.code,
+        name: cls.name,
+        createdAt: cls.createdAt,
+        schoolId: schoolId || undefined,
+      })
+      await loadClasses(password)
+    } catch (e) {
+      setClassError(`关联学堂失败：${e instanceof Error ? e.message : '未知错误'}`)
+    } finally {
+      setClassBusy(false)
+    }
+  }
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
@@ -651,6 +888,7 @@ export default function AdminPage() {
     setAuthError(null)
     try {
       await loadClasses(password)
+      await loadSchools(password)
       setAuthed(true)
     } catch (e) {
       setAuthError(e instanceof Error ? e.message : '密码验证失败')
@@ -714,6 +952,7 @@ export default function AdminPage() {
         code: cls.code,
         name,
         createdAt: cls.createdAt,
+        schoolId: cls.schoolId,
       })
       setEditingClassCode(null)
       setEditClassName('')
@@ -811,7 +1050,7 @@ export default function AdminPage() {
             <p className="px-3 text-[10px] uppercase font-bold tracking-wider text-slate-500 mb-2">全局管理</p>
             <button
               type="button"
-              onClick={() => { setShowLibrary(true); setSelectedCode(null) }}
+              onClick={() => { setShowLibrary(true); setShowSchools(false); setSelectedCode(null) }}
               className={`w-full flex items-center gap-2.5 px-3 py-3 rounded-xl border smooth-transition ${
                 showLibrary
                   ? 'bg-emerald-600/15 border-emerald-500/30 text-white'
@@ -820,6 +1059,18 @@ export default function AdminPage() {
             >
               <Library size={15} className="shrink-0" />
               <span className="text-sm font-bold">共享库</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => { setShowSchools(true); setShowLibrary(false); setSelectedCode(null) }}
+              className={`w-full flex items-center gap-2.5 px-3 py-3 mt-1 rounded-xl border smooth-transition ${
+                showSchools
+                  ? 'bg-emerald-600/15 border-emerald-500/30 text-white'
+                  : 'border-transparent text-slate-350 hover:bg-slate-900/50 hover:text-white'
+              }`}
+            >
+              <Link2 size={15} className="shrink-0" />
+              <span className="text-sm font-bold">学堂签到链接</span>
             </button>
           </div>
 
@@ -891,12 +1142,11 @@ export default function AdminPage() {
                         ? 'bg-emerald-600/15 border-emerald-500/30 text-white' 
                         : 'border-transparent text-slate-350 hover:bg-slate-900/50 hover:text-white'
                     }`}
-                    onClick={() => { setSelectedCode(cls.code); setShowLibrary(false) }}
+                    onClick={() => { setSelectedCode(cls.code); setShowLibrary(false); setShowSchools(false) }}
                   >
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-bold font-mono tracking-wider">{cls.code}</p>
                       {editingClassCode === cls.code ? (
-                        <div className="mt-1 flex items-center gap-1.5">
+                        <div className="flex items-center gap-1.5">
                           <input
                             type="text"
                             value={editClassName}
@@ -918,8 +1168,9 @@ export default function AdminPage() {
                           </button>
                         </div>
                       ) : (
-                        cls.name && <p className="text-[10px] text-slate-500 font-medium truncate mt-0.5">{cls.name}</p>
+                        <p className="text-sm font-bold truncate">{cls.name || cls.code}</p>
                       )}
+                      <p className="text-[10px] text-slate-500 font-mono tracking-wider mt-0.5">{cls.code}</p>
                     </div>
                     
                     {/* Hover actions */}
@@ -953,7 +1204,9 @@ export default function AdminPage() {
 
         {/* Links management panel */}
         <section className="flex-1 overflow-y-auto p-6 md:p-8">
-          {showLibrary ? (
+          {showSchools ? (
+            <SchoolsManager password={password} schools={schools} classes={classes} onChanged={reloadAll} />
+          ) : showLibrary ? (
             <SharedLibraryManager password={password} />
           ) : !selectedCode ? (
             <div className="h-full flex flex-col items-center justify-center text-slate-500 text-sm gap-2">
@@ -979,6 +1232,39 @@ export default function AdminPage() {
                 </a>
               </div>
               
+              {/* Sign-in link assignment — the class page reads the QR + 口令
+                  from whichever 学堂 is picked here. */}
+              <div className="p-4 rounded-2xl border border-slate-800 bg-slate-950/40 space-y-2">
+                <div className="flex items-center gap-2">
+                  <Link2 size={13} className="text-emerald-400 shrink-0" />
+                  <p className="text-[10px] uppercase font-bold tracking-wider text-slate-500">签到学堂</p>
+                </div>
+                <select
+                  value={selectedClass?.schoolId ?? ''}
+                  onChange={e => selectedClass && handleAssignSchool(selectedClass, e.target.value)}
+                  disabled={classBusy}
+                  className="w-full px-3 py-2 text-xs rounded-xl bg-slate-950 border border-slate-800 text-slate-100 focus:outline-none focus:border-emerald-500 disabled:opacity-40"
+                >
+                  <option value="">未关联（前台不显示二维码）</option>
+                  {schools.map(school => (
+                    <option key={school.id} value={school.id}>{school.name}</option>
+                  ))}
+                </select>
+                {assignedSchool ? (
+                  <p className="text-[10px] text-slate-500 break-all">
+                    {assignedSchool.url} · 口令{' '}
+                    <span className="font-mono tracking-widest text-emerald-300">
+                      {assignedSchool.passcode || '未设置'}
+                    </span>
+                  </p>
+                ) : (
+                  <p className="text-[10px] text-slate-500">
+                    在左侧「学堂签到链接」中维护链接与口令。
+                  </p>
+                )}
+                {classError && <p className="text-[10px] text-rose-400">{classError}</p>}
+              </div>
+
               <ClassLinks password={password} classCode={selectedCode} classes={classes} />
             </div>
           )}

@@ -61,6 +61,30 @@ export interface ClassInfo {
   code: string
   name: string
   createdAt: string
+  /** 学堂 whose sign-in link this class uses (see School). */
+  schoolId?: string
+}
+
+/**
+ * A 学堂 (academy) as far as sign-in goes: greatpath issues one fixed check-in
+ * URL per 学堂 plus a passcode that staff can rotate there. Classes point at a
+ * school rather than carrying their own copy, so a rotated passcode is updated
+ * in one place.
+ */
+export interface School {
+  id: string
+  name: string
+  url: string
+  passcode: string
+  updatedAt: string
+}
+
+/** Sign-in config resolved for one class, safe to send to the class page. */
+export interface ClassSignin {
+  schoolId: string
+  schoolName: string
+  url: string
+  passcode: string
 }
 
 export type MessageTeam = 'all' | '1' | '2' | '3'

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { listClasses } from '@/lib/r2-server'
+import { getClassSignin, listClasses } from '@/lib/r2-server'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -11,7 +11,10 @@ export async function GET(req: Request) {
     const classes = await listClasses()
     if (code) {
       const found = classes.find(c => c.code === code)
-      return NextResponse.json({ valid: Boolean(found), class: found ?? null })
+      // The sign-in link + passcode ride along with the single-class lookup:
+      // knowing the 8-digit class code is already what gates the class page.
+      const signin = found ? await getClassSignin(code) : null
+      return NextResponse.json({ valid: Boolean(found), class: found ?? null, signin })
     }
     return NextResponse.json(classes)
   } catch (e) {

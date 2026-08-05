@@ -6,10 +6,10 @@ import { Sidebar, type ClassFunction } from '@/components/Sidebar'
 import { Viewer } from '@/components/Viewer'
 import { DedicationPanel } from '@/components/DedicationPanel'
 import { MessagesPanel } from '@/components/MessagesPanel'
-import { SignInQrPanel, type SignInQr } from '@/components/SignInQrPanel'
+import { SignInQrPanel } from '@/components/SignInQrPanel'
 import { ActivitiesSlideshow } from '@/components/ActivitiesSlideshow'
 import { getStore } from '@/lib/links-store'
-import type { ClassInfo, ShowLink } from '@/types'
+import type { ClassInfo, ClassSignin, ShowLink } from '@/types'
 
 export default function ClassPage() {
   const params = useParams()
@@ -21,7 +21,7 @@ export default function ClassPage() {
   const [classInfo, setClassInfo] = useState<ClassInfo | null>(null)
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const [activeFunction, setActiveFunction] = useState<ClassFunction>('presentation')
-  const [signInQr, setSignInQr] = useState<SignInQr | null>(null)
+  const [signin, setSignin] = useState<ClassSignin | null>(null)
   const initializedRef = useRef(false)
 
   const refresh = useCallback(async () => {
@@ -47,22 +47,24 @@ export default function ClassPage() {
     }
   }, [links, classCode])
 
-  useEffect(() => {
-    let cancelled = false
-    async function loadClassInfo() {
-      try {
-        const res = await fetch(`/api/classes?code=${encodeURIComponent(classCode)}`, { cache: 'no-store' })
-        if (!res.ok) throw new Error(`Failed to load class: ${res.status}`)
-        const data = await res.json()
-        if (!cancelled) setClassInfo(data.class ?? null)
-      } catch (e) {
-        console.error('Failed to load class info', e)
-        if (!cancelled) setClassInfo(null)
-      }
+  // One lookup feeds both the header and the always-on sign-in QR: the class
+  // endpoint returns the 学堂 link + 口令 the class is assigned to. Callable
+  // again from the QR panel after staff rotate the 口令 in greatpath.
+  const loadClassInfo = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/classes?code=${encodeURIComponent(classCode)}`, { cache: 'no-store' })
+      if (!res.ok) throw new Error(`Failed to load class: ${res.status}`)
+      const data = await res.json()
+      setClassInfo(data.class ?? null)
+      setSignin(data.signin ?? null)
+    } catch (e) {
+      console.error('Failed to load class info', e)
+      setClassInfo(null)
+      setSignin(null)
     }
-    loadClassInfo()
-    return () => { cancelled = true }
   }, [classCode])
+
+  useEffect(() => { loadClassInfo() }, [loadClassInfo])
 
   useEffect(() => {
     const key = `greatpath-show:${classCode}:selected`
@@ -118,7 +120,7 @@ export default function ClassPage() {
         className={classInfo?.name || classCode}
         activeFunction={activeFunction}
         isOpen={isSidebarOpen}
-        signInQr={signInQr}
+        signin={signin}
         onSelectFunction={handleSelectFunction}
         onBack={() => router.push('/')}
       />
@@ -149,10 +151,9 @@ export default function ClassPage() {
       )}
       {activeFunction === 'signin' && (
         <SignInQrPanel
-          classCode={classCode}
-          classDisplayName={classInfo?.name}
+          signin={signin}
+          onRefresh={loadClassInfo}
           onToggleSidebar={() => setIsSidebarOpen(true)}
-          onQrChange={setSignInQr}
         />
       )}
     </main>
