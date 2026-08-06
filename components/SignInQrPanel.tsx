@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Menu, Pencil, QrCode, RefreshCw, School, Trash2, Users } from 'lucide-react'
+import { ExternalLink, Menu, Pencil, QrCode, RefreshCw, School, Trash2, Users } from 'lucide-react'
 import { QRCodeSVG } from 'qrcode.react'
 import type { ClassSignin } from '@/types'
 
@@ -133,25 +133,26 @@ export function SignInQrPanel({
               ) : (
                 <p className="text-sm text-amber-400/90 mt-3">该链接尚未设置口令</p>
               )}
-              <a
-                href={signin.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="block text-xs text-gray-500 mt-3 break-all max-w-md mx-auto underline decoration-dotted underline-offset-4 hover:text-emerald-300 smooth-transition"
-              >
-                {signin.url}
-              </a>
-              <button
-                onClick={handleRefresh}
-                disabled={refreshing}
-                className="inline-flex items-center gap-1.5 mt-3 px-3 py-1.5 rounded-xl border border-gray-800 text-xs font-semibold text-gray-400 hover:text-white hover:bg-gray-900 disabled:opacity-40 smooth-transition"
-              >
-                <RefreshCw size={12} className={refreshing ? 'animate-spin' : undefined} />
-                <span>刷新口令</span>
-              </button>
-              <p className="text-xs text-emerald-500/80 mt-3">
-                二维码已同步显示在侧栏，切换到其他功能后迟到的学员仍可扫码
-              </p>
+              <div className="flex items-center justify-center gap-2 mt-4">
+                <a
+                  href={signin.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-gray-800 text-xs font-semibold text-gray-400 hover:text-white hover:bg-gray-900 smooth-transition"
+                >
+                  <ExternalLink size={12} />
+                  <span>打开签到页</span>
+                </a>
+                <button
+                  onClick={handleRefresh}
+                  disabled={refreshing}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-gray-800 text-xs font-semibold text-gray-400 hover:text-white hover:bg-gray-900 disabled:opacity-40 smooth-transition"
+                >
+                  <RefreshCw size={12} className={refreshing ? 'animate-spin' : undefined} />
+                  <span>刷新口令</span>
+                </button>
+              </div>
+              <p className="text-xs text-gray-600 mt-3">二维码同步显示在侧栏，迟到的学员随时可扫</p>
             </div>
           </div>
         ) : (
@@ -169,18 +170,33 @@ export function SignInQrPanel({
           <div className="flex items-center justify-between gap-3">
             <div className="min-w-0">
               <h3 className="text-sm font-bold text-white">本班签到链接</h3>
-              <p className="text-xs text-gray-500 mt-0.5">
-                来自 Greatpath「班级管理」班级卡片上的专属链接，保存后本班一直使用，直到有人修改。
-              </p>
+              {!own && !editing && (
+                <p className="text-xs text-gray-500 mt-0.5">
+                  来自 Greatpath「班级管理」班级卡片上的专属链接。
+                </p>
+              )}
             </div>
             {!editing && (
-              <button
-                onClick={() => setEditing(true)}
-                className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-gray-800 text-xs font-semibold text-gray-300 hover:text-white hover:bg-gray-900 smooth-transition"
-              >
-                <Pencil size={12} />
-                <span>{own ? '修改' : '添加'}</span>
-              </button>
+              <div className="shrink-0 flex items-center gap-2">
+                <button
+                  onClick={() => setEditing(true)}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-gray-800 text-xs font-semibold text-gray-300 hover:text-white hover:bg-gray-900 smooth-transition"
+                >
+                  <Pencil size={12} />
+                  <span>{own ? '修改' : '添加'}</span>
+                </button>
+                {own && (
+                  <button
+                    onClick={handleClear}
+                    disabled={saving}
+                    className="p-2 rounded-xl border border-gray-800 text-gray-500 hover:text-red-400 hover:bg-gray-900 disabled:opacity-40 smooth-transition"
+                    aria-label="清除本班签到链接"
+                    title="清除，改用学堂备用链接"
+                  >
+                    <Trash2 size={13} />
+                  </button>
+                )}
+              </div>
             )}
           </div>
 
@@ -217,34 +233,20 @@ export function SignInQrPanel({
               </div>
             </div>
           ) : own ? (
-            <div className="mt-3 flex items-end justify-between gap-3">
-              <div className="min-w-0">
-                <a
-                  href={own.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="block text-xs text-gray-400 break-all underline decoration-dotted underline-offset-4 hover:text-emerald-300 smooth-transition"
-                >
-                  {own.url}
-                </a>
-                <p className="text-xs text-gray-500 mt-1">
-                  口令 <span className="text-emerald-300 font-semibold tracking-[0.15em]">{own.passcode || '未设置'}</span>
-                  {own.updatedAt && (
-                    <span className="text-gray-600">
-                      {' '}· 更新于 {new Date(own.updatedAt).toLocaleString('zh-CN', { hour12: false })}
-                    </span>
-                  )}
-                </p>
-              </div>
-              <button
-                onClick={handleClear}
-                disabled={saving}
-                className="shrink-0 p-2 rounded-xl border border-gray-800 text-gray-500 hover:text-red-400 hover:bg-gray-900 disabled:opacity-40 smooth-transition"
-                aria-label="清除本班签到链接"
-                title="清除，改用学堂备用链接"
+            <div className="mt-2">
+              <a
+                href={own.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block text-xs text-gray-400 break-all underline decoration-dotted underline-offset-4 hover:text-emerald-300 smooth-transition"
               >
-                <Trash2 size={13} />
-              </button>
+                {own.url}
+              </a>
+              {own.updatedAt && (
+                <p className="text-xs text-gray-600 mt-1">
+                  更新于 {new Date(own.updatedAt).toLocaleString('zh-CN', { hour12: false })}
+                </p>
+              )}
             </div>
           ) : (
             <p className="mt-3 text-xs text-gray-600">尚未设置，当前使用学堂的备用链接。</p>
