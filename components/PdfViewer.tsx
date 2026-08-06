@@ -77,49 +77,32 @@ export function PdfViewer({ url, r2Key }: PdfViewerProps) {
     setPage(p)
   }, [url])
 
-  const next = useCallback(() => goToPage(Math.min(page + 1, numPages)), [goToPage, page, numPages])
-  const prev = useCallback(() => goToPage(Math.max(page - 1, 1)), [goToPage, page])
+  // Where to land on the newly shown page: forward navigation lands at the top,
+  // backward navigation lands at the bottom (so you continue reading where you left off).
+  const landingRef = useRef<'top' | 'bottom'>('top')
+
+  const next = useCallback(() => {
+    landingRef.current = 'top'
+    goToPage(Math.min(page + 1, numPages))
+  }, [goToPage, page, numPages])
+  const prev = useCallback(() => {
+    landingRef.current = 'bottom'
+    goToPage(Math.max(page - 1, 1))
+  }, [goToPage, page])
   const zoomIn = useCallback(() => setZoomIdx((i) => Math.min(i + 1, ZOOM_STEPS.length - 1)), [])
   const zoomOut = useCallback(() => setZoomIdx((i) => Math.max(i - 1, 0)), [])
 
-  // Land at the top of the newly shown page (or its bottom, when arriving via scroll-up),
-  // and re-arm the scroll-to-advance trigger below.
-  const wheelLockRef = useRef(false)
-  const landingRef = useRef<'top' | 'bottom'>('top')
   useEffect(() => {
     const el = containerRef.current
-    if (el) {
-      if (landingRef.current === 'bottom') {
-        // Wait a frame so the newly rendered page has its real height before we scroll.
-        requestAnimationFrame(() => { el.scrollTop = el.scrollHeight })
-      } else {
-        el.scrollTop = 0
-      }
+    if (!el) return
+    if (landingRef.current === 'bottom') {
+      // Wait a frame so the newly rendered page has its real height before we scroll.
+      requestAnimationFrame(() => { el.scrollTop = el.scrollHeight })
+    } else {
+      el.scrollTop = 0
     }
     landingRef.current = 'top'
-    wheelLockRef.current = false
   }, [page])
-
-  // Reaching the bottom (top) of the current page and scrolling further advances (retreats)
-  // to the next (previous) page.
-  const handleWheel = useCallback((e: React.WheelEvent<HTMLDivElement>) => {
-    const el = containerRef.current
-    if (!el || wheelLockRef.current) return
-    if (e.deltaY > 0) {
-      const atBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 2
-      if (atBottom && page < numPages) {
-        wheelLockRef.current = true
-        next()
-      }
-    } else if (e.deltaY < 0) {
-      const atTop = el.scrollTop <= 2
-      if (atTop && page > 1) {
-        wheelLockRef.current = true
-        landingRef.current = 'bottom'
-        prev()
-      }
-    }
-  }, [next, prev, page, numPages])
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -146,7 +129,7 @@ export function PdfViewer({ url, r2Key }: PdfViewerProps) {
   }
 
   return (
-    <div ref={containerRef} onWheel={handleWheel} className="relative w-full h-full bg-gray-900 overflow-auto">
+    <div ref={containerRef} className="relative w-full h-full bg-gray-900 overflow-auto">
       <div className="min-h-full flex flex-col items-center py-6 pb-20">
         <Document
           file={sourceUrl}
