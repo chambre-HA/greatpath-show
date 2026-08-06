@@ -133,7 +133,14 @@ export function SignInQrPanel({
               ) : (
                 <p className="text-sm text-amber-400/90 mt-3">该链接尚未设置口令</p>
               )}
-              <p className="text-xs text-gray-500 mt-3 break-all max-w-md mx-auto">{signin.url}</p>
+              <a
+                href={signin.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block text-xs text-gray-500 mt-3 break-all max-w-md mx-auto underline decoration-dotted underline-offset-4 hover:text-emerald-300 smooth-transition"
+              >
+                {signin.url}
+              </a>
               <button
                 onClick={handleRefresh}
                 disabled={refreshing}
@@ -212,7 +219,14 @@ export function SignInQrPanel({
           ) : own ? (
             <div className="mt-3 flex items-end justify-between gap-3">
               <div className="min-w-0">
-                <p className="text-xs text-gray-400 break-all">{own.url}</p>
+                <a
+                  href={own.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block text-xs text-gray-400 break-all underline decoration-dotted underline-offset-4 hover:text-emerald-300 smooth-transition"
+                >
+                  {own.url}
+                </a>
                 <p className="text-xs text-gray-500 mt-1">
                   口令 <span className="text-emerald-300 font-semibold tracking-[0.15em]">{own.passcode || '未设置'}</span>
                   {own.updatedAt && (
