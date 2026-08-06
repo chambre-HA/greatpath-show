@@ -48,8 +48,9 @@ export default function ClassPage() {
   }, [links, classCode])
 
   // One lookup feeds both the header and the always-on sign-in QR: the class
-  // endpoint returns the 学堂 link + 口令 the class is assigned to. Callable
-  // again from the QR panel after staff rotate the 口令 in greatpath.
+  // endpoint returns the class's own check-in link + 口令, or the 学堂 one it is
+  // assigned to as fallback. Callable again from the QR panel after staff rotate
+  // the 口令 in greatpath, or after the class edits its own link.
   const loadClassInfo = useCallback(async () => {
     try {
       const res = await fetch(`/api/classes?code=${encodeURIComponent(classCode)}`, { cache: 'no-store' })
@@ -151,6 +152,7 @@ export default function ClassPage() {
       )}
       {activeFunction === 'signin' && (
         <SignInQrPanel
+          classCode={classCode}
           signin={signin}
           onRefresh={loadClassInfo}
           onToggleSidebar={() => setIsSidebarOpen(true)}

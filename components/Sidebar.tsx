@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { ArrowLeft, ChevronDown, ChevronUp, HeartHandshake, MessageSquare, Presentation, Sparkles } from 'lucide-react'
+import { ArrowLeft, ChevronDown, ChevronUp, HeartHandshake, MessageSquare, Presentation, QrCode, Sparkles } from 'lucide-react'
 import { QRCodeSVG } from 'qrcode.react'
 import { CountdownTimer } from './CountdownTimer'
 import type { ClassSignin } from '@/types'
@@ -74,25 +74,27 @@ export function Sidebar({ className, activeFunction, isOpen, signin, onSelectFun
       </nav>
 
       {/* Timer — pinned at bottom */}
-      <div className={`px-4 pt-2 border-t border-gray-800/60 shrink-0 bg-gray-950/80 ${signin ? 'pb-2' : 'pb-[50px]'}`}>
+      <div className="px-4 pt-2 pb-2 border-t border-gray-800/60 shrink-0 bg-gray-950/80">
         <h2 className="px-3 text-[10px] uppercase font-bold tracking-wider text-slate-500 mb-1">计时器</h2>
         <CountdownTimer />
       </div>
 
-      {/* Sign-in QR — the only entry point for sign-in now: always on screen
+      {/* Sign-in QR — the only entry point for sign-in: always on screen
           (collapsible) so latecomers can scan during any function, and tapping
-          it opens the enlarged view. */}
-      {signin && (
-        <div className="px-4 py-3 border-t border-gray-800/60 shrink-0 bg-gray-950/80">
-          <button
-            onClick={() => setQrCollapsed(prev => !prev)}
-            className="w-full flex items-center justify-between px-3 text-slate-500 hover:text-slate-300 smooth-transition"
-            aria-expanded={!qrCollapsed}
-          >
-            <h2 className="text-[10px] uppercase font-bold tracking-wider">签到二维码</h2>
-            {qrCollapsed ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
-          </button>
-          {!qrCollapsed && (
+          it opens the enlarged view, where the class also maintains its own
+          check-in link. Stays visible with no link yet, so a class can get
+          there to add one. */}
+      <div className="px-4 py-3 border-t border-gray-800/60 shrink-0 bg-gray-950/80">
+        <button
+          onClick={() => setQrCollapsed(prev => !prev)}
+          className="w-full flex items-center justify-between px-3 text-slate-500 hover:text-slate-300 smooth-transition"
+          aria-expanded={!qrCollapsed}
+        >
+          <h2 className="text-[10px] uppercase font-bold tracking-wider">签到二维码</h2>
+          {qrCollapsed ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+        </button>
+        {!qrCollapsed && (
+          signin ? (
             <button
               onClick={() => onSelectFunction('signin')}
               className="w-full flex items-center gap-3 px-3 py-1.5 mt-1.5 rounded-xl hover:bg-gray-900/60 smooth-transition"
@@ -101,24 +103,32 @@ export function Sidebar({ className, activeFunction, isOpen, signin, onSelectFun
               <span className="flex-1 text-left leading-snug min-w-0">
                 {signin.passcode ? (
                   <>
-                    <span className="block text-[10px] uppercase font-bold tracking-wider text-slate-500">
-                      {signin.schoolName || '口令'}
+                    <span className="block text-[10px] uppercase font-bold tracking-wider text-slate-500 truncate">
+                      {signin.label || '口令'}
                     </span>
                     <span className="block text-base font-bold text-emerald-300 tracking-[0.15em]">
                       {signin.passcode}
                     </span>
                   </>
                 ) : (
-                  <span className="block text-[11px] text-slate-400">{signin.schoolName}</span>
+                  <span className="block text-[11px] text-slate-400 truncate">{signin.label}</span>
                 )}
               </span>
               <div className="bg-white p-1.5 rounded-lg shrink-0">
                 <QRCodeSVG value={signin.url} size={72} level="M" />
               </div>
             </button>
-          )}
-        </div>
-      )}
+          ) : (
+            <button
+              onClick={() => onSelectFunction('signin')}
+              className="w-full flex items-center gap-2 px-3 py-2 mt-1.5 rounded-xl border border-dashed border-gray-800 text-[11px] text-slate-500 hover:text-slate-300 hover:bg-gray-900/60 smooth-transition"
+            >
+              <QrCode size={13} className="shrink-0" />
+              <span className="text-left">尚未设置签到链接，点击添加</span>
+            </button>
+          )
+        )}
+      </div>
     </aside>
   )
 }

@@ -5,10 +5,11 @@ import {
   PutObjectCommand,
   S3Client,
 } from '@aws-sdk/client-s3'
-import type { ClassInfo, ClassSignin, DedicationGroup, DedicationPerson, MessageTemplate, School, ShowLink } from '@/types'
+import type { ClassInfo, ClassSignin, ClassSigninOverride, DedicationGroup, DedicationPerson, MessageTemplate, School, ShowLink } from '@/types'
 
 const CLASSES_KEY = '_classes.json'
 const SCHOOLS_KEY = '_schools.json'
+const SIGNIN_KEY = 'signin.json'
 const INDEX_KEY = 'links.json'
 const MESSAGES_KEY = 'messages.json'
 const DEDICATION_KEY = 'dedication.json'
@@ -247,17 +248,77 @@ export async function deleteSchool(id: string): Promise<void> {
   }
 }
 
-/** Null when the class is unknown, unassigned, or points at a deleted school. */
-export async function getClassSignin(classCode: string): Promise<ClassSignin | null> {
-  const classes = await listClasses()
-  const cls = classes.find(c => c.code === normalizeClassCode(classCode))
-  if (!cls?.schoolId) return null
+// ── Per-class sign-in link ─────────────────────────────────────────────────
+// greatpath issues a link per class as well as per 学堂 (the 学堂 one is the
+// fallback), so a class can hold its own. The class page maintains this without
+// the admin password — the 8-digit class code is already what gates that page —
+// and it lives in the class's own object so it can't race admin writes to
+// _classes.json.
 
+function signinKey(classCode: string) {
+  return `${classCode}/${SIGNIN_KEY}`
+}
+
+export async function getClassSigninOverride(classCode: string): Promise<ClassSigninOverride | null> {
+  const client = getClient()
+  const stored = await getJson<ClassSigninOverride | null>(client, signinKey(normalizeClassCode(classCode)), null)
+  return stored?.url ? stored : null
+}
+
+export async function setClassSigninOverride(
+  classCode: string,
+  url: string,
+  passcode: string,
+): Promise<ClassSigninOverride> {
+  const trimmedUrl = url.trim()
+  const trimmedPasscode = passcode.trim()
+  if (!/^https?:\/\//i.test(trimmedUrl)) throw new Error('签到链接必须以 http(s):// 开头')
+  if (trimmedUrl.length > 500) throw new Error('签到链接过长')
+  if (trimmedPasscode.length > 32) throw new Error('口令过长')
+
+  const next: ClassSigninOverride = {
+    url: trimmedUrl,
+    passcode: trimmedPasscode,
+    updatedAt: new Date().toISOString(),
+  }
+  await putJson(getClient(), signinKey(normalizeClassCode(classCode)), next)
+  return next
+}
+
+/** Falls the class back to its 学堂 link. */
+export async function clearClassSigninOverride(classCode: string): Promise<void> {
+  await getClient().send(new DeleteObjectCommand({
+    Bucket: bucket(),
+    Key: signinKey(normalizeClassCode(classCode)),
+  }))
+}
+
+/**
+ * The class's own link when it has one, else the 学堂 it is assigned to. Null
+ * when the class is unknown and has neither.
+ */
+export async function getClassSignin(classCode: string): Promise<ClassSignin | null> {
+  const code = normalizeClassCode(classCode)
+  const [classes, own] = await Promise.all([listClasses(), getClassSigninOverride(code)])
+  const cls = classes.find(c => c.code === code)
+
+  if (own) {
+    return {
+      source: 'class',
+      label: cls?.name || code,
+      url: own.url,
+      passcode: own.passcode,
+      updatedAt: own.updatedAt,
+    }
+  }
+
+  if (!cls?.schoolId) return null
   const school = (await listSchools()).find(s => s.id === cls.schoolId)
   if (!school) return null
   return {
+    source: 'school',
+    label: school.name,
     schoolId: school.id,
-    schoolName: school.name,
     url: school.url,
     passcode: school.passcode,
   }

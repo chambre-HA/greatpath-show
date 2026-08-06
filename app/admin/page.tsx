@@ -1232,12 +1232,13 @@ export default function AdminPage() {
                 </a>
               </div>
               
-              {/* Sign-in link assignment — the class page reads the QR + 口令
-                  from whichever 学堂 is picked here. */}
+              {/* Sign-in link assignment — the fallback. The class page reads
+                  the QR + 口令 from whichever 学堂 is picked here, unless the
+                  class has saved its own 班级专属链接 on its page. */}
               <div className="p-4 rounded-2xl border border-slate-800 bg-slate-950/40 space-y-2">
                 <div className="flex items-center gap-2">
                   <Link2 size={13} className="text-emerald-400 shrink-0" />
-                  <p className="text-[10px] uppercase font-bold tracking-wider text-slate-500">签到学堂</p>
+                  <p className="text-[10px] uppercase font-bold tracking-wider text-slate-500">签到学堂（备用）</p>
                 </div>
                 <select
                   value={selectedClass?.schoolId ?? ''}

@@ -79,12 +79,31 @@ export interface School {
   updatedAt: string
 }
 
-/** Sign-in config resolved for one class, safe to send to the class page. */
-export interface ClassSignin {
-  schoolId: string
-  schoolName: string
+/**
+ * A class's own check-in link. greatpath now issues a per-class link (managed on
+ * the class card in 班级管理) alongside the 学堂-wide one, and treats the 学堂 link
+ * as the fallback — so this takes precedence over the class's School when set.
+ * The class itself maintains it from the class page; it stays until someone
+ * there replaces or clears it.
+ */
+export interface ClassSigninOverride {
   url: string
   passcode: string
+  updatedAt: string
+}
+
+/** Sign-in config resolved for one class, safe to send to the class page. */
+export interface ClassSignin {
+  /** 'class' = the class's own link, 'school' = the 学堂 fallback. */
+  source: 'class' | 'school'
+  /** Heading shown above the 口令: class name or 学堂 name. */
+  label: string
+  url: string
+  passcode: string
+  /** Only for source 'school'. */
+  schoolId?: string
+  /** Only for source 'class'. */
+  updatedAt?: string
 }
 
 export type MessageTeam = 'all' | '1' | '2' | '3'
