@@ -123,22 +123,16 @@ export const DEFAULT_DINGKE_SECTIONS: DingkeSection[] = [
     slide: {
       kicker: '修学方法',
       headline: '八步三禅',
-      // The eight steps are eight full sentences — the deck projects them at body
-      // size too, so this slide is not `chant`; the 窍诀 that follows carries the
-      // emphasis in the script instead.
+      // The room only sees the shape of the method — 八步三禅 and the two 禅修 —
+      // plus the 窍诀 it chants. The eight steps stay in the host's script; eight
+      // full sentences on screen is what made the original slide unreadable.
       lines: [
-        '# 八步骤',
-        '第一步：学习书本和音像内容，了解每句话的含义。',
-        '第二步：正确理解每个段落、章节的法义。',
-        '第三步：带着问题学习，知道每个章节说明什么问题，经论中又以什么方式说明。',
-        '第四步：把经论所说的问题和现实人生相联系，建立正确的认识和人生观，并安住在这种认识和观念中。',
-        '第五步：学会用佛法智慧（正见）重新审视人生，指导人生，解决现实问题。',
-        '第六步：摆脱不良串习，建立正向心理。安住于正向心理，完成心态的改变。',
-        '第七步：思维不良心态的过患，依正见观察思考，摆脱不良心态。',
-        '第八步：思维正向心态的利益，依正见深入思考。不断熟悉和重复正向心态，完成生命品质的改变。',
+        '正念禅修 · 利他禅修',
         '# 十六字窍诀',
-        '树立正见，认清真相，摆脱错误，重复正确。',
+        '树立正见，认清真相，',
+        '摆脱错误，重复正确。',
       ],
+      chant: true,
     },
     // 八步骤 before 十六字窍诀: the 窍诀 is the summary the room chants once the
     // eight steps have been read through.
@@ -158,7 +152,6 @@ export const DEFAULT_DINGKE_SECTIONS: DingkeSection[] = [
           '第八步：思维正向心态的利益，依正见深入思考。不断熟悉和重复正向心态，完成生命品质的改变。',
         ],
       },
-      { kind: 'cue', text: '主持人白：大众一起念诵十六字窍诀。' },
       { kind: 'chant', label: '十六字窍诀', text: '树立正见，认清真相，摆脱错误，重复正确。' },
     ],
   },
@@ -167,15 +160,14 @@ export const DEFAULT_DINGKE_SECTIONS: DingkeSection[] = [
     title: '修学效果',
     slide: {
       kicker: '修学效果',
-      headline: '观念 · 心态 · 生命品质',
       lines: ['落实正确的态度和方法后，', '我们将从「观念、心态、生命品质」发生改变，', '这是水到渠成的。'],
     },
     blocks: [
+      { kind: 'text', label: '修学效果', text: '落实正确的态度和方法后，我们将从「观念、心态、生命品质」发生改变，这是水到渠成的。' },
       {
         kind: 'text',
         text: '凡夫的生命是一大堆错误观念和混乱情绪的综合体。错误观念导致贪嗔痴烦恼，形成凡夫品质；正确观念带来正向心态，成就圣贤品质。通过修学，我们对世界和人生的固有观念将逐渐被智慧替代，解除由错误观念导致的烦恼，走出迷妄的轮回系统，成就佛菩萨的生命品质。',
       },
-      { kind: 'text', text: '落实正确的态度和方法后，我们将从「观念、心态、生命品质」发生改变，这是水到渠成的。' },
     ],
   },
   {
@@ -219,7 +211,6 @@ export const DEFAULT_DINGKE_SECTIONS: DingkeSection[] = [
   {
     id: 'dedication',
     title: '回向',
-    subtitle: '完成菩提导航打卡',
     slide: {
       kicker: '大众至诚回向',
       headline: '回向偈',
@@ -231,9 +222,28 @@ export const DEFAULT_DINGKE_SECTIONS: DingkeSection[] = [
       { kind: 'dedication' },
       { kind: 'cue', text: '大众至诚回向：' },
       { kind: 'chant', label: '回向偈', text: '愿以此功德\n普及于一切\n我等与众生\n皆共成佛道' },
-      { kind: 'cue', text: '主持人白：请大家打开「菩提导航」APP——「五处用心」——「定课」，做好本次共修打卡，并阅读「心理提示」，完成「心理积累」、「心理检测」。' },
     ],
     dedication: true,
+  },
+  // Clocking out closes the session the way 菩提导航 opened it, and needs to stay
+  // on screen while everyone finds the app — hence its own step rather than a
+  // trailing line under the 回向偈.
+  {
+    id: 'checkout',
+    title: '菩提导航',
+    subtitle: '定课打卡',
+    slide: {
+      kicker: '定课圆满',
+      headline: '完成菩提导航打卡',
+      lines: [
+        '五处用心 —— 定课 —— 打卡',
+        '阅读「心理提示」',
+        '完成「心理积累」、「心理检测」',
+      ],
+    },
+    blocks: [
+      { kind: 'cue', text: '主持人白：请大家打开「菩提导航」APP——「五处用心」——「定课」，做好本次共修打卡，并阅读「心理提示」，完成「心理积累」、「心理检测」。' },
+    ],
   },
 ]
 
