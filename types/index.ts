@@ -159,7 +159,13 @@ export type DingkeBlock =
 export interface DingkeSlide {
   /** Small label above the headline. */
   kicker?: string
-  headline: string
+  /** Omit when the slide's own lines are the headline (e.g. 十八字方针). */
+  headline?: string
+  /**
+   * One line per row. A line starting with `#` renders as a small label instead,
+   * which is how a slide shows several named groups in sequence — 十八字方针 above
+   * its three lines, then 修学态度 above the three attitudes.
+   */
   lines: string[]
   /** Chant lines get centred, wider-tracked, one line per row. */
   chant?: boolean
@@ -172,6 +178,8 @@ export interface DingkeSection {
   slide: DingkeSlide
   blocks: DingkeBlock[]
   audio?: DingkeAudio
+  /** Puts the player above the script — for 开场, where the music leads. */
+  audioFirst?: boolean
   /** Renders the class's live 回向名单 in place of the `dedication` block. */
   dedication?: boolean
 }

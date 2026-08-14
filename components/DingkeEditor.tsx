@@ -22,7 +22,7 @@ export function DingkeEditor({
 }) {
   const [title, setTitle] = useState(section.title)
   const [subtitle, setSubtitle] = useState(section.subtitle ?? '')
-  const [headline, setHeadline] = useState(section.slide.headline)
+  const [headline, setHeadline] = useState(section.slide.headline ?? '')
   const [slideLines, setSlideLines] = useState(section.slide.lines.join('\n'))
   const [body, setBody] = useState(blocksToBody(section.blocks))
   const [busy, setBusy] = useState(false)
@@ -82,6 +82,10 @@ export function DingkeEditor({
               value={slideLines}
               onChange={e => setSlideLines(e.target.value)}
             />
+            <p className="text-[11px] text-slate-500 mt-2 leading-relaxed">
+              以 <code className="text-slate-400">#</code> 开头的行显示为小标题，可用来把一页分成几组
+              （如 <code className="text-slate-400"># 十八字方针</code>）。
+            </p>
           </div>
           <div>
             <label className={label}>主持人念诵稿</label>
