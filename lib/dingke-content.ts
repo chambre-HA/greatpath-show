@@ -57,7 +57,7 @@ export const DEFAULT_DINGKE_SECTIONS: DingkeSection[] = [
     subtitle: '五处用心 · 修学管理',
     slide: {
       kicker: '定课开始',
-      lines: ['菩提导航', '开始修学管理', '五处用心 —— 慈经 —— 修学管理'],
+      lines: ['菩提导航', '- 开始修学管理', '- 五处用心 —— 慈经 —— 修学管理'],
     },
     blocks: [
       { kind: 'cue', text: '主持人白：请大家打开「菩提导航」APP，进入「五处用心」——「慈经」——「修学管理」，做好「态度」与「慈经修习」的管理，我们正式进入定课流程。' },
@@ -129,8 +129,7 @@ export const DEFAULT_DINGKE_SECTIONS: DingkeSection[] = [
       // full sentences on screen is what made the original slide unreadable.
       lines: [
         '八步三禅',
-        '正念禅修',
-        '利他禅修',
+        '- 正念禅修 · 利他禅修',
         '# 十六字窍诀',
         '树立正见，认清真相，',
         '摆脱错误，重复正确。',
@@ -178,7 +177,7 @@ export const DEFAULT_DINGKE_SECTIONS: DingkeSection[] = [
     subtitle: '音频含止静，播完即可',
     slide: {
       kicker: '禅修',
-      lines: ['《慈经》', '请大家端身正坐，收摄身心，恭听《慈经》'],
+      lines: ['《慈经》', '- 请大家端身正坐，收摄身心，恭听《慈经》'],
     },
     blocks: [
       { kind: 'cue', text: '主持人缓缓念诵禅修引导：' },
@@ -233,9 +232,9 @@ export const DEFAULT_DINGKE_SECTIONS: DingkeSection[] = [
       kicker: '定课圆满',
       lines: [
         '完成菩提导航打卡',
-        '五处用心 —— 定课 —— 打卡',
-        '阅读「心理提示」',
-        '完成「心理积累」、「心理检测」',
+        '- 五处用心 —— 定课 —— 打卡',
+        '- 阅读「心理提示」',
+        '- 完成「心理积累」、「心理检测」',
       ],
     },
     blocks: [

@@ -78,8 +78,9 @@ export function DingkeEditor({
               onChange={e => setSlideLines(e.target.value)}
             />
             <p className="text-[11px] text-slate-500 mt-2 leading-relaxed">
-              以 <code className="text-slate-400">#</code> 开头的行显示为小标题，可用来把一页分成几组
-              （如 <code className="text-slate-400"># 十八字方针</code>）。
+              以 <code className="text-slate-400">#</code> 开头的行显示为橙色小标题，可把一页分成几组
+              （如 <code className="text-slate-400"># 十八字方针</code>）；以 <code className="text-slate-400">-</code> 开头的行
+              显示为较小的说明文字（如 <code className="text-slate-400">- 五处用心 —— 定课 —— 打卡</code>）。
             </p>
           </div>
           <div>

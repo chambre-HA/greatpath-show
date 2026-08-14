@@ -24,56 +24,87 @@ export function formatClock(seconds: number): string {
 
 /* ── Slide half — what the room reads ────────────────────────────────────── */
 
+type SlideRow =
+  /** Amber section title. The kicker is one of these, not a separate tier. */
+  | { kind: 'label'; text: string }
+  /** The words the room says or reads. */
+  | { kind: 'line'; text: string }
+  /** Supporting detail — a navigation path, an instruction, a sub-item. */
+  | { kind: 'detail'; text: string }
+
+function toRow(line: string): SlideRow {
+  if (line.startsWith('#')) return { kind: 'label', text: line.replace(/^#\s*/, '') }
+  if (line.startsWith('-')) return { kind: 'detail', text: line.replace(/^-\s*/, '') }
+  return { kind: 'line', text: line }
+}
+
 /**
+ * Three tiers, and only three: one amber label style shared by the kicker and
+ * every `#` label, one weight for the words being said, and a lighter, smaller
+ * one for supporting detail (五处用心 —— 定课 —— 打卡 and friends), which would
+ * otherwise shout as loudly as the line it belongs to.
+ *
  * Type sizes are capped against the viewport height as well as the zoom step:
  * a phone held in landscape is only ~380px tall, and a 4-line chant at desktop
- * sizes would push its last line under the step bar. The `min-h-full` inner
- * wrapper keeps the content optically centred while still being scrollable when
- * it genuinely doesn't fit (very large zoom on a very short screen).
+ * sizes would push its last line under the step bar. The `min-h-full` wrapper
+ * keeps the content optically centred while still allowing a scroll when it
+ * genuinely doesn't fit (very large zoom on a very short screen).
  */
 export function SlidePane({ slide, zoom }: { slide: DingkeSlide; zoom: number }) {
   const size = (rem: number, vh: number) => `min(${rem * zoom}rem, ${vh}vh)`
+
+  const rows: SlideRow[] = [
+    ...(slide.kicker ? [{ kind: 'label' as const, text: slide.kicker }] : []),
+    ...slide.lines.map(toRow),
+  ]
 
   return (
     <div
       className="flex-1 min-w-0 min-h-0 overflow-y-auto"
       style={{ background: `linear-gradient(160deg, ${DECK_SLATE} 0%, ${DECK_SLATE_DEEP} 100%)` }}
     >
-      <div className="min-h-full flex flex-col items-center justify-center px-6 py-5 text-center">
-        {slide.kicker && (
-          <p
-            className="uppercase tracking-[0.35em] font-bold mb-3 shrink-0"
-            style={{ fontSize: size(0.7, 2.8), color: DECK_AMBER }}
-          >
-            {slide.kicker}
-          </p>
-        )}
-        {/* One body size for every line, as the deck has it — a line that needs
-            to stand out gets its own `#` label above it rather than its own
-            type scale. */}
-        <div className="space-y-2 max-w-3xl">
-          {slide.lines.map((line, i) => {
-            const label = line.startsWith('#') ? line.replace(/^#\s*/, '') : null
-            if (label) {
-              return (
-                <p
-                  key={i}
-                  className={`uppercase tracking-[0.3em] font-bold ${i > 0 ? 'pt-5' : ''}`}
-                  style={{ fontSize: size(0.68, 2.6), color: DECK_AMBER }}
-                >
-                  {label}
-                </p>
-              )
+      <div className="min-h-full flex flex-col items-center justify-center px-6 py-4 text-center">
+        <div className="w-full max-w-3xl">
+          {rows.map((row, i) => {
+            const prev = rows[i - 1]
+            switch (row.kind) {
+              case 'label':
+                return (
+                  <p
+                    key={i}
+                    className={`font-bold tracking-[0.3em] mb-2.5 ${i > 0 ? 'mt-5' : ''}`}
+                    style={{ fontSize: size(0.68, 2.3), color: DECK_AMBER }}
+                  >
+                    {row.text}
+                  </p>
+                )
+              case 'detail':
+                return (
+                  <p
+                    key={i}
+                    // Tucked under the line it qualifies, but given room of its
+                    // own when a run of details stands alone.
+                    className={`text-white/60 font-light leading-relaxed tracking-[0.04em] ${
+                      prev?.kind === 'line' ? 'mt-2.5' : 'mt-1.5'
+                    }`}
+                    style={{ fontSize: size(1, 3.3) }}
+                  >
+                    {row.text}
+                  </p>
+                )
+              default:
+                return (
+                  <p
+                    key={i}
+                    className={`text-white font-semibold leading-snug tracking-[0.08em] ${
+                      prev && prev.kind !== 'label' ? 'mt-2.5' : ''
+                    }`}
+                    style={{ fontSize: size(1.55, 5) }}
+                  >
+                    {row.text}
+                  </p>
+                )
             }
-            return (
-              <p
-                key={i}
-                className="text-white font-semibold tracking-[0.1em] leading-snug"
-                style={{ fontSize: size(1.5, 5.6) }}
-              >
-                {line}
-              </p>
-            )
           })}
         </div>
       </div>
