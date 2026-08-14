@@ -172,8 +172,6 @@ export interface DingkeSection {
   slide: DingkeSlide
   blocks: DingkeBlock[]
   audio?: DingkeAudio
-  /** Offers a 止静 countdown of this many minutes after the audio. */
-  stillnessMinutes?: number
   /** Renders the class's live 回向名单 in place of the `dedication` block. */
   dedication?: boolean
 }

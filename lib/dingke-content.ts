@@ -144,7 +144,7 @@ export const DEFAULT_DINGKE_SECTIONS: DingkeSection[] = [
   {
     id: 'cijing',
     title: '《慈经》禅修',
-    subtitle: '音乐结束后止静 3 分钟',
+    subtitle: '音频含止静，播完即可',
     slide: {
       kicker: '禅修',
       headline: '《慈经》',
@@ -155,10 +155,9 @@ export const DEFAULT_DINGKE_SECTIONS: DingkeSection[] = [
       { kind: 'text', text: '请大家端身正坐，收摄身心，恭听《慈经》。' },
       { kind: 'text', text: '把《慈经》的每句话，转化成自己发自内心的决定和由衷的祝愿。' },
       { kind: 'text', text: '同时，通过观想，把《慈经》的每一句话转化成阳光，观想我们的祝愿如冬日的暖阳般遍照一切，驱散世间的敌意和危险，驱散众生精神和身体的痛苦，使他们的每个细胞得到能量，快乐无忧。' },
-      { kind: 'note', text: '音乐结束后，止静 3 分钟。' },
+      { kind: 'note', text: '音频末段已包含约 3 分钟的止静，播完即可进入下一环节，无需另行计时。' },
     ],
     audio: DINGKE_AUDIO.cijing,
-    stillnessMinutes: 3,
   },
   {
     id: 'fourimmeasurables',
