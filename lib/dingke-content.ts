@@ -45,7 +45,7 @@ export const DEFAULT_DINGKE_SECTIONS: DingkeSection[] = [
     },
     blocks: [
       { kind: 'note', text: '等候师兄进入会议室时，可先播放「活动展示」；人到齐后再开始。' },
-      { kind: 'cue', text: '主持人白：请大家收摄身心，我们一起念诵——' },
+      { kind: 'cue', text: '主持人白：欢迎大家来到本次定课共修，让我们收摄身心，一起开始吧。' },
       { kind: 'chant', text: '让企业家走向觉醒\n让经营成为修行\n让商场成为道场\n让商业利益众生' },
     ],
     audio: DINGKE_AUDIO.opening,
@@ -78,9 +78,8 @@ export const DEFAULT_DINGKE_SECTIONS: DingkeSection[] = [
       ],
     },
     blocks: [
-      { kind: 'cue', text: '主持人白：大众合掌，三称本师圣号。' },
+      { kind: 'cue', text: '主持人白：大众合掌，三称本师圣号，大乘皈敬颂。' },
       { kind: 'chant', label: '三称', text: '南无本师释迦牟尼佛（三称）' },
-      { kind: 'cue', text: '主持人白：大众一起念诵大乘皈敬颂。' },
       { kind: 'chant', label: '大乘皈敬颂', text: '诸佛正法贤圣僧\n直至菩提永皈依\n我以所修诸善根\n为利有情愿成佛' },
     ],
   },
@@ -135,14 +134,16 @@ export const DEFAULT_DINGKE_SECTIONS: DingkeSection[] = [
         '摆脱错误，重复正确。',
       ],
     },
-    // 八步骤 before 十六字窍诀: the 窍诀 is the summary the room chants once the
-    // eight steps have been read through.
+    // Three plain white-title / grey-body blocks, matching how 真诚·认真·老实
+    // read in 修学态度 above — no boxed emphasis, since nothing here is chanted
+    // aloud together. 修学方法 states what the method is called; 八步骤 and
+    // 十六字窍诀 follow in the order the host actually walks through them.
     blocks: [
-      { kind: 'note', text: '三禅：正念禅修 · 利他禅修（贯穿八步骤）' },
+      { kind: 'text', label: '修学方法', text: '八步三禅\n正念禅修\n利他禅修' },
       {
-        kind: 'list',
+        kind: 'text',
         label: '八步骤',
-        items: [
+        text: [
           '第一步：学习书本和音像内容，了解每句话的含义。',
           '第二步：正确理解每个段落、章节的法义。',
           '第三步：带着问题学习，知道每个章节说明什么问题，经论中又以什么方式说明。',
@@ -151,9 +152,9 @@ export const DEFAULT_DINGKE_SECTIONS: DingkeSection[] = [
           '第六步：摆脱不良串习，建立正向心理。安住于正向心理，完成心态的改变。',
           '第七步：思维不良心态的过患，依正见观察思考，摆脱不良心态。',
           '第八步：思维正向心态的利益，依正见深入思考。不断熟悉和重复正向心态，完成生命品质的改变。',
-        ],
+        ].join('\n'),
       },
-      { kind: 'chant', label: '十六字窍诀', text: '树立正见，认清真相，摆脱错误，重复正确。' },
+      { kind: 'text', label: '十六字窍诀', text: '树立正见，认清真相，摆脱错误，重复正确。' },
     ],
   },
   {
@@ -201,8 +202,7 @@ export const DEFAULT_DINGKE_SECTIONS: DingkeSection[] = [
       ],
     },
     blocks: [
-      { kind: 'cue', text: '轮值主持、组长或辅助员白：在座下我们要不断践行慈心，把想法变成做法，把祝愿变成行动。' },
-      { kind: 'cue', text: '大众合掌，至诚修习四无量心。' },
+      { kind: 'cue', text: '轮值主持、组长或辅助员白：在座下我们要不断践行慈心，把想法变成做法，把祝愿变成行动。大众合掌，至诚修习四无量心。' },
       { kind: 'chant', label: '四无量心', text: '愿诸众生永具安乐及安乐因\n愿诸众生永离众苦及众苦因\n愿诸众生永具无苦之乐身心愉悦\n愿诸众生远离贪嗔之心住平等舍' },
     ],
   },
