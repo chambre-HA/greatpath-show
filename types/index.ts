@@ -135,6 +135,69 @@ export interface DedicationGroup {
   order?: number
 }
 
+/**
+ * 定课 — the fixed liturgy a class runs together over Zoom. Content lives in
+ * lib/dingke-content.ts; a class can override the wording per section (see
+ * DingkeSectionOverride), which is what gets stored in R2.
+ */
+export interface DingkeAudio {
+  src: string
+  label: string
+  durationSec: number
+}
+
+/** A line of the host's script. `dedication` is filled from 回向名单 at render time. */
+export type DingkeBlock =
+  | { kind: 'cue'; text: string; label?: string }
+  | { kind: 'chant'; text: string; label?: string }
+  | { kind: 'text'; text: string; label?: string }
+  | { kind: 'note'; text: string; label?: string }
+  | { kind: 'list'; items: string[]; label?: string }
+  | { kind: 'dedication' }
+
+/** The large-type half of the screen — what the whole room reads off the share. */
+export interface DingkeSlide {
+  /** Small label above the headline. */
+  kicker?: string
+  headline: string
+  lines: string[]
+  /** Chant lines get centred, wider-tracked, one line per row. */
+  chant?: boolean
+}
+
+export interface DingkeSection {
+  id: string
+  title: string
+  subtitle?: string
+  slide: DingkeSlide
+  blocks: DingkeBlock[]
+  audio?: DingkeAudio
+  /** Offers a 止静 countdown of this many minutes after the audio. */
+  stillnessMinutes?: number
+  /** Renders the class's live 回向名单 in place of the `dedication` block. */
+  dedication?: boolean
+}
+
+/**
+ * One class's edits to a section. Anything omitted falls back to the default,
+ * so a class that only retitles a section keeps future script updates.
+ */
+export interface DingkeSectionOverride {
+  title?: string
+  subtitle?: string
+  headline?: string
+  /** Replaces DingkeSlide.lines. */
+  slideLines?: string[]
+  /**
+   * Replaces the whole script. Blank-line-separated paragraphs; a paragraph
+   * starting with 「主持人白」or「白：」renders as a cue.
+   */
+  body?: string
+  updatedAt: string
+}
+
+export type DingkeOverrides = Record<string, DingkeSectionOverride>
+
 export interface OrgActivity {
   id: string
   title: string

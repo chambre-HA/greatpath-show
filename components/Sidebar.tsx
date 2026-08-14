@@ -1,14 +1,15 @@
 'use client'
 
 import { useState } from 'react'
-import { ArrowLeft, ChevronDown, ChevronUp, HeartHandshake, MessageSquare, Presentation, QrCode, Sparkles } from 'lucide-react'
+import { ArrowLeft, ChevronDown, ChevronUp, Flower2, HeartHandshake, MessageSquare, Presentation, QrCode, Sparkles } from 'lucide-react'
 import { QRCodeSVG } from 'qrcode.react'
 import { CountdownTimer } from './CountdownTimer'
 import type { ClassSignin } from '@/types'
 
-export type ClassFunction = 'presentation' | 'dedication' | 'messages' | 'activities' | 'signin'
+export type ClassFunction = 'dingke' | 'presentation' | 'dedication' | 'messages' | 'activities' | 'signin'
 
 const FUNCTIONS: { value: ClassFunction; label: string; icon: typeof Presentation; iconBg: string; iconColor: string }[] = [
+  { value: 'dingke', label: '手机版定课', icon: Flower2, iconBg: 'bg-emerald-950/40 border-emerald-900/30', iconColor: 'text-emerald-400' },
   { value: 'presentation', label: '演示文稿', icon: Presentation, iconBg: 'bg-amber-950/40 border-amber-900/30', iconColor: 'text-amber-500' },
   { value: 'activities', label: '活动展示', icon: Sparkles, iconBg: 'bg-violet-950/40 border-violet-900/30', iconColor: 'text-violet-400' },
   { value: 'dedication', label: '回向名单', icon: HeartHandshake, iconBg: 'bg-pink-950/40 border-pink-900/30', iconColor: 'text-pink-400' },
@@ -49,7 +50,11 @@ export function Sidebar({ className, activeFunction, isOpen, signin, onSelectFun
       </div>
 
       {/* Function selector */}
-      <nav className="flex-1 min-h-0 px-3 py-4 space-y-1.5 overflow-y-auto">
+      {/* Navigation keeps its full height and the timer below it takes the
+          squeeze: on a laptop the timer is tall enough to push every function
+          but the first off screen, and the sidebar is the only way to reach
+          them. */}
+      <nav className="shrink-0 px-3 py-4 space-y-1.5">
         <p className="px-3 text-[10px] uppercase font-bold tracking-wider text-slate-500 mb-1">功能导航</p>
         {FUNCTIONS.map(fn => {
           const Icon = fn.icon
@@ -74,7 +79,7 @@ export function Sidebar({ className, activeFunction, isOpen, signin, onSelectFun
       </nav>
 
       {/* Timer — pinned at bottom */}
-      <div className="px-4 pt-2 pb-2 border-t border-gray-800/60 shrink-0 bg-gray-950/80">
+      <div className="flex-1 min-h-0 overflow-y-auto px-4 pt-2 pb-2 border-t border-gray-800/60 bg-gray-950/80">
         <h2 className="px-3 text-[10px] uppercase font-bold tracking-wider text-slate-500 mb-1">计时器</h2>
         <CountdownTimer />
       </div>
