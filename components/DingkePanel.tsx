@@ -1,0 +1,299 @@
+'use client'
+
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import {
+  ChevronLeft, ChevronRight, Maximize, Menu, Minimize, Pencil, Sparkles, Type,
+} from 'lucide-react'
+import { AudioBar, LandscapeNudge, ScriptBlock, SlidePane, StillnessTimer } from './DingkeParts'
+import { DingkeEditor } from './DingkeEditor'
+import { getDingkeStore, type DingkeSectionEdit } from '@/lib/dingke-store'
+import { DEFAULT_DINGKE_SECTIONS } from '@/lib/dingke-content'
+import type { DedicationGroup, DingkeSection } from '@/types'
+
+/** Script text scale, persisted per browser — hosts land on very different phones. */
+const ZOOM_STEPS = [0.85, 1, 1.15, 1.35, 1.6]
+const ZOOM_KEY = 'greatpath-show:dingke:zoom'
+
+interface DingkePanelProps {
+  classCode: string
+  onToggleSidebar?: () => void
+  /** Jumps to 活动展示 — what a host runs while attendees trickle into Zoom. */
+  onShowActivities?: () => void
+}
+
+export function DingkePanel({ classCode, onToggleSidebar, onShowActivities }: DingkePanelProps) {
+  // Renders the built-in script immediately; the class's own edits swap in when
+  // the fetch lands, so a slow R2 read never leaves the host staring at a spinner
+  // with a Zoom room waiting.
+  const [sections, setSections] = useState<DingkeSection[]>(DEFAULT_DINGKE_SECTIONS)
+  const [overriddenIds, setOverriddenIds] = useState<string[]>([])
+  const [index, setIndex] = useState(0)
+  const [groups, setGroups] = useState<DedicationGroup[]>([])
+  const [dedicationLoading, setDedicationLoading] = useState(true)
+  const [zoomStep, setZoomStep] = useState(1)
+  const [editing, setEditing] = useState(false)
+  const [showNudge, setShowNudge] = useState(false)
+  const [fullscreen, setFullscreen] = useState(false)
+  const [stillnessKey, setStillnessKey] = useState(0)
+  const rootRef = useRef<HTMLDivElement | null>(null)
+
+  const store = useMemo(() => getDingkeStore(classCode), [classCode])
+
+  const loadScript = useCallback(async () => {
+    try {
+      const script = await store.load()
+      if (script.sections?.length) setSections(script.sections)
+      setOverriddenIds(script.overriddenIds ?? [])
+    } catch (e) {
+      console.error('Failed to load 定课 script', e)
+    }
+  }, [store])
+
+  useEffect(() => { loadScript() }, [loadScript])
+
+  // 回向名单 is read fresh every time the panel opens: leaders often add names
+  // minutes before the session starts.
+  useEffect(() => {
+    let cancelled = false
+    async function load() {
+      try {
+        const res = await fetch(`/api/dedication?class=${encodeURIComponent(classCode)}`, { cache: 'no-store' })
+        if (!res.ok) throw new Error(String(res.status))
+        const data: DedicationGroup[] = await res.json()
+        if (!cancelled) setGroups(data)
+      } catch (e) {
+        console.error('Failed to load 回向名单', e)
+      } finally {
+        if (!cancelled) setDedicationLoading(false)
+      }
+    }
+    load()
+    return () => { cancelled = true }
+  }, [classCode])
+
+  useEffect(() => {
+    const saved = window.localStorage.getItem(ZOOM_KEY)
+    if (saved !== null) setZoomStep(Math.min(ZOOM_STEPS.length - 1, Math.max(0, parseInt(saved) || 0)))
+  }, [])
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !window.matchMedia) return
+    const mq = window.matchMedia('(orientation: portrait) and (max-width: 900px)')
+    const sync = () => setShowNudge(mq.matches)
+    sync()
+    mq.addEventListener('change', sync)
+    return () => mq.removeEventListener('change', sync)
+  }, [])
+
+  // A 12-minute chant with no touches will otherwise lock the phone mid-session.
+  useEffect(() => {
+    let sentinel: WakeLockSentinel | null = null
+    let released = false
+    navigator.wakeLock?.request('screen').then(lock => {
+      if (released) lock.release().catch(() => {})
+      else sentinel = lock
+    }).catch(() => {})
+    return () => {
+      released = true
+      sentinel?.release().catch(() => {})
+    }
+  }, [])
+
+  useEffect(() => {
+    const onChange = () => setFullscreen(Boolean(document.fullscreenElement))
+    document.addEventListener('fullscreenchange', onChange)
+    return () => document.removeEventListener('fullscreenchange', onChange)
+  }, [])
+
+  const go = useCallback((delta: number) => {
+    setIndex(i => Math.min(sections.length - 1, Math.max(0, i + delta)))
+  }, [sections.length])
+
+  useEffect(() => {
+    if (editing) return
+    function onKey(e: KeyboardEvent) {
+      const target = e.target as HTMLElement | null
+      if (target && /^(INPUT|TEXTAREA)$/.test(target.tagName)) return
+      if (e.key === 'ArrowRight' || e.key === 'PageDown') { e.preventDefault(); go(1) }
+      if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); go(-1) }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [go, editing])
+
+  const cycleZoom = useCallback(() => {
+    setZoomStep(step => {
+      const next = (step + 1) % ZOOM_STEPS.length
+      window.localStorage.setItem(ZOOM_KEY, String(next))
+      return next
+    })
+  }, [])
+
+  const toggleFullscreen = useCallback(() => {
+    if (document.fullscreenElement) document.exitFullscreen().catch(() => {})
+    else rootRef.current?.requestFullscreen?.().catch(() => {})
+  }, [])
+
+  const handleSave = useCallback(async (edit: DingkeSectionEdit) => {
+    await store.save(sections[index].id, edit)
+    await loadScript()
+  }, [store, sections, index, loadScript])
+
+  const handleReset = useCallback(async () => {
+    await store.reset(sections[index].id)
+    await loadScript()
+  }, [store, sections, index, loadScript])
+
+  const section = sections[index]
+  const zoom = ZOOM_STEPS[zoomStep]
+  const isFirst = index === 0
+  const isLast = index === sections.length - 1
+
+  return (
+    <div ref={rootRef} className="flex-1 flex flex-col bg-gray-900 min-w-0 min-h-0 overflow-hidden relative">
+      {showNudge && <LandscapeNudge onDismiss={() => setShowNudge(false)} />}
+
+      <header className="z-30 border-b border-gray-800/80 bg-gray-950/80 backdrop-blur px-4 py-3 flex items-center gap-3 shrink-0">
+        {onToggleSidebar && (
+          <button
+            onClick={onToggleSidebar}
+            className="p-1.5 -ml-1.5 text-gray-400 hover:text-white [@media(min-width:768px)_and_(min-height:640px)]:hidden"
+            aria-label="打开侧栏"
+          >
+            <Menu size={18} />
+          </button>
+        )}
+        <div className="flex-1 min-w-0">
+          <h1 className="text-sm font-bold text-white leading-tight truncate">
+            定课 · {section.title}
+            {overriddenIds.includes(section.id) && (
+              <span className="ml-2 text-[10px] font-semibold text-amber-400/90 align-middle">已修改</span>
+            )}
+          </h1>
+          {section.subtitle && (
+            <p className="text-[11px] text-slate-500 truncate mt-0.5">{section.subtitle}</p>
+          )}
+        </div>
+
+        {onShowActivities && isFirst && (
+          <button
+            onClick={onShowActivities}
+            className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-violet-900/50 bg-violet-950/30 text-[11px] font-semibold text-violet-300 hover:text-white hover:bg-violet-900/40 smooth-transition"
+            title="等候师兄进入会议室时播放"
+          >
+            <Sparkles size={13} />
+            <span>候场播放活动</span>
+          </button>
+        )}
+        <button
+          onClick={cycleZoom}
+          className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl border border-slate-800 text-[11px] font-bold text-slate-400 hover:text-white hover:bg-slate-900 smooth-transition"
+          title="调整字号"
+        >
+          <Type size={13} />
+          <span className="tabular-nums">{Math.round(zoom * 100)}%</span>
+        </button>
+        <button
+          onClick={() => setEditing(true)}
+          className="p-2 rounded-xl border border-slate-800 text-slate-400 hover:text-white hover:bg-slate-900 smooth-transition"
+          aria-label="编辑本环节"
+        >
+          <Pencil size={14} />
+        </button>
+        <button
+          onClick={toggleFullscreen}
+          className="p-2 rounded-xl border border-slate-800 text-slate-400 hover:text-white hover:bg-slate-900 smooth-transition"
+          aria-label={fullscreen ? '退出全屏' : '全屏'}
+        >
+          {fullscreen ? <Minimize size={14} /> : <Maximize size={14} />}
+        </button>
+      </header>
+
+      {/* Landscape: slide left, script right. Portrait falls back to stacked. */}
+      <div className="flex-1 min-h-0 flex flex-col landscape:flex-row [@media(min-width:768px)]:flex-row">
+        <SlidePane slide={section.slide} zoom={zoom} />
+
+        <aside
+          className="shrink-0 border-t landscape:border-t-0 landscape:border-l [@media(min-width:768px)]:border-t-0 [@media(min-width:768px)]:border-l border-gray-800/80 bg-gray-950/60 overflow-y-auto h-[45%] landscape:h-auto [@media(min-width:768px)]:h-auto w-full landscape:w-[42%] [@media(min-width:768px)]:w-[42%] landscape:max-w-lg [@media(min-width:768px)]:max-w-lg"
+          style={{ fontSize: `${zoom}rem` }}
+        >
+          <div className="px-4 py-4 space-y-3.5">
+            <p className="text-[0.68em] uppercase tracking-[0.2em] font-bold text-slate-600">主持人念诵稿</p>
+
+            {section.blocks.map((block, i) => (
+              <ScriptBlock key={i} block={block} groups={groups} dedicationLoading={dedicationLoading} />
+            ))}
+
+            {section.audio && (
+              <AudioBar audio={section.audio} onEnded={() => setStillnessKey(k => k + 1)} />
+            )}
+            {section.stillnessMinutes && (
+              <StillnessTimer minutes={section.stillnessMinutes} autoStartKey={stillnessKey} />
+            )}
+
+            {onShowActivities && isFirst && (
+              <button
+                onClick={onShowActivities}
+                className="sm:hidden w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-violet-900/50 bg-violet-950/30 text-xs font-semibold text-violet-300 active:scale-[0.98] smooth-transition"
+              >
+                <Sparkles size={14} />
+                <span>候场播放活动展示</span>
+              </button>
+            )}
+          </div>
+        </aside>
+      </div>
+
+      {/* Step bar */}
+      <div className="shrink-0 border-t border-gray-800/60 bg-gray-950/85 px-3 py-2.5 flex items-center gap-2">
+        <button
+          onClick={() => go(-1)}
+          disabled={isFirst}
+          className="flex items-center gap-1 px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-xs font-bold text-slate-200 hover:bg-slate-800 active:scale-[0.97] smooth-transition disabled:opacity-30 disabled:pointer-events-none"
+        >
+          <ChevronLeft size={15} />
+          <span className="hidden sm:inline">上一步</span>
+        </button>
+
+        <div className="flex-1 min-w-0 flex items-center gap-1 overflow-x-auto">
+          {sections.map((s, i) => (
+            <button
+              key={s.id}
+              onClick={() => setIndex(i)}
+              className={`px-2.5 py-1.5 rounded-lg text-[11px] font-semibold whitespace-nowrap smooth-transition ${
+                i === index
+                  ? 'bg-emerald-600/20 text-emerald-300 border border-emerald-700/40'
+                  : 'text-slate-500 hover:text-slate-200 border border-transparent'
+              }`}
+            >
+              {i + 1}. {s.title}
+            </button>
+          ))}
+        </div>
+
+        <span className="shrink-0 text-[11px] font-mono tabular-nums text-slate-500">
+          {index + 1}/{sections.length}
+        </span>
+
+        <button
+          onClick={() => go(1)}
+          disabled={isLast}
+          className="flex items-center gap-1 px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-xs font-bold text-white active:scale-[0.97] smooth-transition disabled:opacity-30 disabled:pointer-events-none"
+        >
+          <span className="hidden sm:inline">下一步</span>
+          <ChevronRight size={15} />
+        </button>
+      </div>
+
+      {editing && (
+        <DingkeEditor
+          section={section}
+          overridden={overriddenIds.includes(section.id)}
+          onSave={handleSave}
+          onReset={handleReset}
+          onClose={() => setEditing(false)}
+        />
+      )}
+    </div>
+  )
+}

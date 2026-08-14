@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Calendar, MapPin, Menu, Pause, Play, Users, Volume1, Volume2, VolumeX } from 'lucide-react'
+import { Calendar, MapPin, Menu, Music, Pause, Play, Users, Volume1, Volume2, VolumeX } from 'lucide-react'
 import { QRCodeSVG } from 'qrcode.react'
 import type { OrgActivity } from '@/types'
 
@@ -16,8 +16,14 @@ export function ActivitiesSlideshow({ onToggleSidebar }: { onToggleSidebar?: () 
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [index, setIndex] = useState(0)
-  const [playing, setPlaying] = useState(false)
+  // Slides start advancing on their own: this view's whole job is to be running
+  // on the shared screen while attendees trickle into the Zoom room, and the
+  // host is usually busy admitting people rather than pressing play. The music
+  // stays opt-in — browsers block unprompted audio, and the host may already
+  // have something playing.
+  const [playing, setPlaying] = useState(true)
   const [elapsed, setElapsed] = useState(0)
+  const [musicOn, setMusicOn] = useState(false)
   const [volume, setVolume] = useState(0.6)
   const [muted, setMuted] = useState(false)
   const audioRef = useRef<HTMLAudioElement | null>(null)
@@ -66,13 +72,9 @@ export function ActivitiesSlideshow({ onToggleSidebar }: { onToggleSidebar?: () 
   useEffect(() => {
     const audio = audioRef.current
     if (!audio) return
-    if (playing) {
-      audio.currentTime = 0
-      audio.play().catch(() => {})
-    } else {
-      audio.pause()
-    }
-  }, [playing])
+    if (musicOn) audio.play().catch(() => setMusicOn(false))
+    else audio.pause()
+  }, [musicOn])
 
   const handleTogglePlay = useCallback(() => {
     setPlaying(p => {
@@ -212,7 +214,19 @@ export function ActivitiesSlideshow({ onToggleSidebar }: { onToggleSidebar?: () 
           className="flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-violet-600 hover:bg-violet-500 text-white active:scale-[0.97] smooth-transition text-xs font-bold disabled:opacity-40 disabled:pointer-events-none"
         >
           {playing ? <Pause size={14} /> : <Play size={14} />}
-          <span>{playing ? '停止' : '播放'}</span>
+          <span>{playing ? '暂停' : '播放'}</span>
+        </button>
+
+        <button
+          onClick={() => setMusicOn(m => !m)}
+          className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl border text-xs font-semibold active:scale-[0.97] smooth-transition ${
+            musicOn
+              ? 'border-violet-700/50 bg-violet-950/40 text-violet-300'
+              : 'border-slate-800 text-slate-400 hover:text-white hover:bg-slate-900'
+          }`}
+        >
+          <Music size={14} />
+          <span>{musicOn ? '音乐开' : '音乐关'}</span>
         </button>
 
         <div className="flex items-center gap-2 flex-1 max-w-xs">

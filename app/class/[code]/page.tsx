@@ -8,6 +8,7 @@ import { DedicationPanel } from '@/components/DedicationPanel'
 import { MessagesPanel } from '@/components/MessagesPanel'
 import { SignInQrPanel } from '@/components/SignInQrPanel'
 import { ActivitiesSlideshow } from '@/components/ActivitiesSlideshow'
+import { DingkePanel } from '@/components/DingkePanel'
 import { getStore } from '@/lib/links-store'
 import type { ClassInfo, ClassSignin, ShowLink } from '@/types'
 
@@ -141,6 +142,13 @@ export default function ClassPage() {
           onRefresh={refresh}
         />
       </div>
+      {activeFunction === 'dingke' && (
+        <DingkePanel
+          classCode={classCode}
+          onToggleSidebar={() => setIsSidebarOpen(true)}
+          onShowActivities={() => setActiveFunction('activities')}
+        />
+      )}
       {activeFunction === 'activities' && (
         <ActivitiesSlideshow onToggleSidebar={() => setIsSidebarOpen(true)} />
       )}

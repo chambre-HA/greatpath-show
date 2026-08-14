@@ -5,7 +5,9 @@ import {
   PutObjectCommand,
   S3Client,
 } from '@aws-sdk/client-s3'
-import type { ClassInfo, ClassSignin, ClassSigninOverride, DedicationGroup, DedicationPerson, MessageTemplate, School, ShowLink } from '@/types'
+import type { ClassInfo, ClassSignin, ClassSigninOverride, DedicationGroup, DedicationPerson, DingkeOverrides, DingkeSectionOverride, MessageTemplate, School, ShowLink } from '@/types'
+import { getDefaultSection } from './dingke-content'
+import { blocksToBody } from './dingke-resolve'
 
 const CLASSES_KEY = '_classes.json'
 const SCHOOLS_KEY = '_schools.json'
@@ -13,6 +15,7 @@ const SIGNIN_KEY = 'signin.json'
 const INDEX_KEY = 'links.json'
 const MESSAGES_KEY = 'messages.json'
 const DEDICATION_KEY = 'dedication.json'
+const DINGKE_KEY = 'dingke.json'
 const CLASS_CODE_LENGTH = 8
 
 function env(name: string): string {
@@ -654,4 +657,61 @@ export async function setDedicationPersonPaused(classCode: string, groupId: stri
   const people = items[idx].people.map(p => p.id === personId ? { ...p, paused, updatedAt: new Date().toISOString() } : p)
   items[idx] = { ...items[idx], people }
   await putJson(client, dedicationKey(classCode), items)
+}
+
+// ── 定课 script overrides ───────────────────────────────────────────────────
+// Only the fields a class actually edited are stored; everything else keeps
+// falling through to DEFAULT_DINGKE_SECTIONS, so central script updates still
+// reach classes that tweaked one section.
+
+function dingkeKey(classCode: string) {
+  return `${classCode}/${DINGKE_KEY}`
+}
+
+export async function getDingkeOverrides(classCode: string): Promise<DingkeOverrides> {
+  const client = getClient()
+  return getJson<DingkeOverrides>(client, dingkeKey(classCode), {})
+}
+
+export async function setDingkeOverride(
+  classCode: string,
+  sectionId: string,
+  patch: Omit<DingkeSectionOverride, 'updatedAt'>,
+): Promise<void> {
+  const client = getClient()
+  const all = await getJson<DingkeOverrides>(client, dingkeKey(classCode), {})
+  const base = getDefaultSection(sectionId)
+
+  // Two things are filtered out here. An empty string means "clear this field
+  // back to the default" rather than "override with blank" — a blank headline
+  // would just render as a hole. And a value identical to the default is not
+  // stored at all: the editor prefills from the resolved section, so saving an
+  // untouched field would otherwise freeze it against future script updates.
+  const cleaned: DingkeSectionOverride = { updatedAt: new Date().toISOString() }
+  const keep = (value: string | undefined, fallback: string | undefined) => {
+    const trimmed = value?.trim()
+    return trimmed && trimmed !== fallback?.trim() ? trimmed : undefined
+  }
+  const title = keep(patch.title, base?.title)
+  if (title) cleaned.title = title
+  const subtitle = keep(patch.subtitle, base?.subtitle)
+  if (subtitle) cleaned.subtitle = subtitle
+  const headline = keep(patch.headline, base?.slide.headline)
+  if (headline) cleaned.headline = headline
+  const lines = patch.slideLines?.map(l => l.trim()).filter(Boolean)
+  if (lines?.length && lines.join('\n') !== base?.slide.lines.join('\n')) cleaned.slideLines = lines
+  const body = keep(patch.body, base ? blocksToBody(base.blocks) : undefined)
+  if (body) cleaned.body = body
+
+  const hasEdits = Object.keys(cleaned).length > 1
+  if (hasEdits) all[sectionId] = cleaned
+  else delete all[sectionId]
+  await putJson(client, dingkeKey(classCode), all)
+}
+
+export async function clearDingkeOverride(classCode: string, sectionId: string): Promise<void> {
+  const client = getClient()
+  const all = await getJson<DingkeOverrides>(client, dingkeKey(classCode), {})
+  delete all[sectionId]
+  await putJson(client, dingkeKey(classCode), all)
 }
