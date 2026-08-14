@@ -21,7 +21,7 @@ Zoom, which that deck served badly from a phone: several lines were pictures of
 calligraphy, the 主持人白 cues were unreadably small, and the two chant tracks were
 embedded audio that only plays inside PowerPoint's slideshow mode.
 
-- **Script**: `lib/dingke-content.ts` — 8 sections transcribed from the deck.
+- **Script**: `lib/dingke-content.ts` — 9 sections transcribed from the deck.
   Section ids are stable; per-class overrides key off them.
 - **Overrides**: a class can reword any section; stored at
   `<classCode>/dingke.json` in R2. Only fields that actually differ from the

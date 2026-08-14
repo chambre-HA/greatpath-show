@@ -32,21 +32,37 @@ export const DINGKE_AUDIO = {
 } as const
 
 export const DEFAULT_DINGKE_SECTIONS: DingkeSection[] = [
+  // 开场 runs music first, then puts the four 愿 on screen to be read together —
+  // hence `audioFirst`. It is split from 菩提导航 below so the host clicks through
+  // the sequence rather than reading it off one crowded slide.
   {
-    id: 'prepare',
-    title: '准备',
-    subtitle: '菩提导航 · 五处用心',
+    id: 'opening',
+    title: '开场',
+    subtitle: '开场音乐 · 共同愿景',
     slide: {
       kicker: '定课开始前',
+      lines: ['让企业家走向觉醒', '让经营成为修行', '让商场成为道场', '让商业利益众生'],
+      chant: true,
+    },
+    blocks: [
+      { kind: 'note', text: '等候师兄进入会议室时，可先播放「活动展示」；人到齐后再开始。' },
+      { kind: 'cue', text: '主持人白：请大家收摄身心，我们一起念诵——' },
+      { kind: 'chant', text: '让企业家走向觉醒\n让经营成为修行\n让商场成为道场\n让商业利益众生' },
+    ],
+    audio: DINGKE_AUDIO.opening,
+    audioFirst: true,
+  },
+  {
+    id: 'prepare',
+    title: '菩提导航',
+    subtitle: '五处用心 · 修学管理',
+    slide: {
       headline: '菩提导航',
       lines: ['开始修学管理', '五处用心 —— 慈经 —— 修学管理'],
     },
     blocks: [
       { kind: 'cue', text: '主持人白：请大家打开「菩提导航」APP，进入「五处用心」——「慈经」——「修学管理」，做好「态度」与「慈经修习」的管理，我们正式进入定课流程。' },
-      { kind: 'text', text: '让企业家走向觉醒，让经营成为修行，让商场成为道场，让商业利益众生。' },
-      { kind: 'note', text: '等候师兄进入会议室时，可先播放「活动展示」；人到齐后再开始。' },
     ],
-    audio: DINGKE_AUDIO.opening,
   },
   {
     id: 'homage',
@@ -70,9 +86,14 @@ export const DEFAULT_DINGKE_SECTIONS: DingkeSection[] = [
     title: '修学态度',
     subtitle: '十八字方针',
     slide: {
-      kicker: '修学态度',
-      headline: '真诚 · 认真 · 老实',
-      lines: ['真诚、认真、老实，', '理解、接受、运用，', '观念、心态、品质。'],
+      lines: [
+        '# 十八字方针',
+        '真诚、认真、老实，',
+        '理解、接受、运用，',
+        '观念、心态、品质。',
+        '# 修学态度',
+        '真诚、认真、老实',
+      ],
       chant: true,
     },
     blocks: [
@@ -100,14 +121,28 @@ export const DEFAULT_DINGKE_SECTIONS: DingkeSection[] = [
     title: '修学方法',
     subtitle: '八步三禅 · 十六字窍诀',
     slide: {
-      kicker: '修学方法 · 十六字窍诀',
+      kicker: '修学方法',
       headline: '八步三禅',
-      lines: ['树立正见，认清真相，', '摆脱错误，重复正确。'],
-      chant: true,
+      // The eight steps are eight full sentences — the deck projects them at body
+      // size too, so this slide is not `chant`; the 窍诀 that follows carries the
+      // emphasis in the script instead.
+      lines: [
+        '# 八步骤',
+        '第一步：学习书本和音像内容，了解每句话的含义。',
+        '第二步：正确理解每个段落、章节的法义。',
+        '第三步：带着问题学习，知道每个章节说明什么问题，经论中又以什么方式说明。',
+        '第四步：把经论所说的问题和现实人生相联系，建立正确的认识和人生观，并安住在这种认识和观念中。',
+        '第五步：学会用佛法智慧（正见）重新审视人生，指导人生，解决现实问题。',
+        '第六步：摆脱不良串习，建立正向心理。安住于正向心理，完成心态的改变。',
+        '第七步：思维不良心态的过患，依正见观察思考，摆脱不良心态。',
+        '第八步：思维正向心态的利益，依正见深入思考。不断熟悉和重复正向心态，完成生命品质的改变。',
+        '# 十六字窍诀',
+        '树立正见，认清真相，摆脱错误，重复正确。',
+      ],
     },
+    // 八步骤 before 十六字窍诀: the 窍诀 is the summary the room chants once the
+    // eight steps have been read through.
     blocks: [
-      { kind: 'cue', text: '主持人白：大众一起念诵十六字窍诀。' },
-      { kind: 'chant', label: '十六字窍诀', text: '树立正见，认清真相，摆脱错误，重复正确。' },
       { kind: 'note', text: '三禅：正念禅修 · 利他禅修（贯穿八步骤）' },
       {
         kind: 'list',
@@ -123,6 +158,8 @@ export const DEFAULT_DINGKE_SECTIONS: DingkeSection[] = [
           '第八步：思维正向心态的利益，依正见深入思考。不断熟悉和重复正向心态，完成生命品质的改变。',
         ],
       },
+      { kind: 'cue', text: '主持人白：大众一起念诵十六字窍诀。' },
+      { kind: 'chant', label: '十六字窍诀', text: '树立正见，认清真相，摆脱错误，重复正确。' },
     ],
   },
   {

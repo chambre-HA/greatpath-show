@@ -210,11 +210,13 @@ export function DingkePanel({ classCode, onToggleSidebar, onShowActivities }: Di
           <div className="px-4 py-4 space-y-3.5">
             <p className="text-[0.68em] uppercase tracking-[0.2em] font-bold text-slate-600">主持人念诵稿</p>
 
+            {section.audio && section.audioFirst && <AudioBar audio={section.audio} />}
+
             {section.blocks.map((block, i) => (
               <ScriptBlock key={i} block={block} groups={groups} dedicationLoading={dedicationLoading} />
             ))}
 
-            {section.audio && <AudioBar audio={section.audio} />}
+            {section.audio && !section.audioFirst && <AudioBar audio={section.audio} />}
 
             {onShowActivities && isFirst && (
               <button
