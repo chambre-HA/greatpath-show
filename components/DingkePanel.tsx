@@ -38,6 +38,7 @@ export function DingkePanel({ classCode, onToggleSidebar, onShowActivities }: Di
   // playing the same direction regardless of which button was pressed.
   const [direction, setDirection] = useState<1 | -1>(1)
   const rootRef = useRef<HTMLDivElement | null>(null)
+  const scriptRef = useRef<HTMLElement | null>(null)
 
   const store = useMemo(() => getDingkeStore(classCode), [classCode])
 
@@ -108,6 +109,13 @@ export function DingkePanel({ classCode, onToggleSidebar, onShowActivities }: Di
       return clamped
     })
   }, [sections.length])
+
+  // A long script (修学方法, the 八步骤) leaves the panel scrolled partway down;
+  // without this the next step would open already scrolled to wherever the
+  // previous one left off, which reads as broken rather than as a new step.
+  useEffect(() => {
+    scriptRef.current?.scrollTo({ top: 0 })
+  }, [index])
 
   const go = useCallback((delta: number) => {
     setIndex(i => {
@@ -223,6 +231,7 @@ export function DingkePanel({ classCode, onToggleSidebar, onShowActivities }: Di
         <SlidePane slide={section.slide} zoom={zoom} sectionId={section.id} direction={direction} />
 
         <aside
+          ref={scriptRef}
           className="shrink-0 border-t landscape:border-t-0 landscape:border-l [@media(min-width:768px)]:border-t-0 [@media(min-width:768px)]:border-l border-black/60 bg-[#0B0F14] overflow-y-auto h-[45%] landscape:h-auto [@media(min-width:768px)]:h-auto w-full landscape:w-[42%] [@media(min-width:768px)]:w-[42%] landscape:max-w-lg [@media(min-width:768px)]:max-w-lg"
           style={{ fontSize: `${zoom}rem` }}
         >
