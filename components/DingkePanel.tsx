@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   ChevronLeft, ChevronRight, Maximize, Menu, Minimize, Pencil, Sparkles, Type,
 } from 'lucide-react'
-import { AudioBar, LandscapeNudge, ScriptBlock, SlidePane, StillnessTimer } from './DingkeParts'
+import { AudioBar, ScriptBlock, SlidePane } from './DingkeParts'
 import { DingkeEditor } from './DingkeEditor'
 import { getDingkeStore, type DingkeSectionEdit } from '@/lib/dingke-store'
 import { DEFAULT_DINGKE_SECTIONS } from '@/lib/dingke-content'
@@ -32,9 +32,7 @@ export function DingkePanel({ classCode, onToggleSidebar, onShowActivities }: Di
   const [dedicationLoading, setDedicationLoading] = useState(true)
   const [zoomStep, setZoomStep] = useState(1)
   const [editing, setEditing] = useState(false)
-  const [showNudge, setShowNudge] = useState(false)
   const [fullscreen, setFullscreen] = useState(false)
-  const [stillnessKey, setStillnessKey] = useState(0)
   const rootRef = useRef<HTMLDivElement | null>(null)
 
   const store = useMemo(() => getDingkeStore(classCode), [classCode])
@@ -74,15 +72,6 @@ export function DingkePanel({ classCode, onToggleSidebar, onShowActivities }: Di
   useEffect(() => {
     const saved = window.localStorage.getItem(ZOOM_KEY)
     if (saved !== null) setZoomStep(Math.min(ZOOM_STEPS.length - 1, Math.max(0, parseInt(saved) || 0)))
-  }, [])
-
-  useEffect(() => {
-    if (typeof window === 'undefined' || !window.matchMedia) return
-    const mq = window.matchMedia('(orientation: portrait) and (max-width: 900px)')
-    const sync = () => setShowNudge(mq.matches)
-    sync()
-    mq.addEventListener('change', sync)
-    return () => mq.removeEventListener('change', sync)
   }, [])
 
   // A 12-minute chant with no touches will otherwise lock the phone mid-session.
@@ -151,8 +140,6 @@ export function DingkePanel({ classCode, onToggleSidebar, onShowActivities }: Di
 
   return (
     <div ref={rootRef} className="flex-1 flex flex-col bg-gray-900 min-w-0 min-h-0 overflow-hidden relative">
-      {showNudge && <LandscapeNudge onDismiss={() => setShowNudge(false)} />}
-
       <header className="z-30 border-b border-gray-800/80 bg-gray-950/80 backdrop-blur px-4 py-3 flex items-center gap-3 shrink-0">
         {onToggleSidebar && (
           <button
@@ -178,7 +165,7 @@ export function DingkePanel({ classCode, onToggleSidebar, onShowActivities }: Di
         {onShowActivities && isFirst && (
           <button
             onClick={onShowActivities}
-            className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-violet-900/50 bg-violet-950/30 text-[11px] font-semibold text-violet-300 hover:text-white hover:bg-violet-900/40 smooth-transition"
+            className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-800 text-[11px] font-semibold text-slate-400 hover:text-white hover:bg-slate-900 smooth-transition"
             title="等候师兄进入会议室时播放"
           >
             <Sparkles size={13} />
@@ -209,12 +196,15 @@ export function DingkePanel({ classCode, onToggleSidebar, onShowActivities }: Di
         </button>
       </header>
 
-      {/* Landscape: slide left, script right. Portrait falls back to stacked. */}
+      {/* Slide beside the script in landscape, stacked above it in portrait —
+          both are supported layouts. The slide half carries the deck's own slate
+          blue; the script half stays near-black so the two never read as one
+          surface. */}
       <div className="flex-1 min-h-0 flex flex-col landscape:flex-row [@media(min-width:768px)]:flex-row">
         <SlidePane slide={section.slide} zoom={zoom} />
 
         <aside
-          className="shrink-0 border-t landscape:border-t-0 landscape:border-l [@media(min-width:768px)]:border-t-0 [@media(min-width:768px)]:border-l border-gray-800/80 bg-gray-950/60 overflow-y-auto h-[45%] landscape:h-auto [@media(min-width:768px)]:h-auto w-full landscape:w-[42%] [@media(min-width:768px)]:w-[42%] landscape:max-w-lg [@media(min-width:768px)]:max-w-lg"
+          className="shrink-0 border-t landscape:border-t-0 landscape:border-l [@media(min-width:768px)]:border-t-0 [@media(min-width:768px)]:border-l border-black/60 bg-[#0B0F14] overflow-y-auto h-[45%] landscape:h-auto [@media(min-width:768px)]:h-auto w-full landscape:w-[42%] [@media(min-width:768px)]:w-[42%] landscape:max-w-lg [@media(min-width:768px)]:max-w-lg"
           style={{ fontSize: `${zoom}rem` }}
         >
           <div className="px-4 py-4 space-y-3.5">
@@ -224,17 +214,12 @@ export function DingkePanel({ classCode, onToggleSidebar, onShowActivities }: Di
               <ScriptBlock key={i} block={block} groups={groups} dedicationLoading={dedicationLoading} />
             ))}
 
-            {section.audio && (
-              <AudioBar audio={section.audio} onEnded={() => setStillnessKey(k => k + 1)} />
-            )}
-            {section.stillnessMinutes && (
-              <StillnessTimer minutes={section.stillnessMinutes} autoStartKey={stillnessKey} />
-            )}
+            {section.audio && <AudioBar audio={section.audio} />}
 
             {onShowActivities && isFirst && (
               <button
                 onClick={onShowActivities}
-                className="sm:hidden w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-violet-900/50 bg-violet-950/30 text-xs font-semibold text-violet-300 active:scale-[0.98] smooth-transition"
+                className="sm:hidden w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-slate-800/80 bg-slate-900/40 text-xs font-semibold text-slate-400 active:scale-[0.98] smooth-transition"
               >
                 <Sparkles size={14} />
                 <span>候场播放活动展示</span>
