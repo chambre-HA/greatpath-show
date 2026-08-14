@@ -33,6 +33,10 @@ export function DingkePanel({ classCode, onToggleSidebar, onShowActivities }: Di
   const [zoomStep, setZoomStep] = useState(1)
   const [editing, setEditing] = useState(false)
   const [fullscreen, setFullscreen] = useState(false)
+  // Which way the last navigation moved, so the slide-in animation matches it
+  // (forward slides in from the right, back from the left) rather than always
+  // playing the same direction regardless of which button was pressed.
+  const [direction, setDirection] = useState<1 | -1>(1)
   const rootRef = useRef<HTMLDivElement | null>(null)
 
   const store = useMemo(() => getDingkeStore(classCode), [classCode])
@@ -94,8 +98,23 @@ export function DingkePanel({ classCode, onToggleSidebar, onShowActivities }: Di
     return () => document.removeEventListener('fullscreenchange', onChange)
   }, [])
 
+  // Every way of changing steps — arrows, keyboard, the step-bar tabs — routes
+  // through here so the animation direction always matches where the host
+  // actually navigated to, including a tab click that skips several steps.
+  const goTo = useCallback((next: number) => {
+    setIndex(i => {
+      const clamped = Math.min(sections.length - 1, Math.max(0, next))
+      setDirection(clamped >= i ? 1 : -1)
+      return clamped
+    })
+  }, [sections.length])
+
   const go = useCallback((delta: number) => {
-    setIndex(i => Math.min(sections.length - 1, Math.max(0, i + delta)))
+    setIndex(i => {
+      const clamped = Math.min(sections.length - 1, Math.max(0, i + delta))
+      setDirection(delta >= 0 ? 1 : -1)
+      return clamped
+    })
   }, [sections.length])
 
   useEffect(() => {
@@ -201,7 +220,7 @@ export function DingkePanel({ classCode, onToggleSidebar, onShowActivities }: Di
           blue; the script half stays near-black so the two never read as one
           surface. */}
       <div className="flex-1 min-h-0 flex flex-col landscape:flex-row [@media(min-width:768px)]:flex-row">
-        <SlidePane slide={section.slide} zoom={zoom} />
+        <SlidePane slide={section.slide} zoom={zoom} sectionId={section.id} direction={direction} />
 
         <aside
           className="shrink-0 border-t landscape:border-t-0 landscape:border-l [@media(min-width:768px)]:border-t-0 [@media(min-width:768px)]:border-l border-black/60 bg-[#0B0F14] overflow-y-auto h-[45%] landscape:h-auto [@media(min-width:768px)]:h-auto w-full landscape:w-[42%] [@media(min-width:768px)]:w-[42%] landscape:max-w-lg [@media(min-width:768px)]:max-w-lg"
@@ -212,9 +231,17 @@ export function DingkePanel({ classCode, onToggleSidebar, onShowActivities }: Di
 
             {section.audio && section.audioFirst && <AudioBar audio={section.audio} />}
 
-            {section.blocks.map((block, i) => (
-              <ScriptBlock key={i} block={block} groups={groups} dedicationLoading={dedicationLoading} />
-            ))}
+            {/* Keyed separately from AudioBar so the player never remounts (and
+                so never loses playback position) on a slide change — only the
+                script text itself animates in. */}
+            <div
+              key={section.id}
+              className={`space-y-3.5 ${direction > 0 ? 'dingke-enter-fwd' : 'dingke-enter-back'}`}
+            >
+              {section.blocks.map((block, i) => (
+                <ScriptBlock key={i} block={block} groups={groups} dedicationLoading={dedicationLoading} />
+              ))}
+            </div>
 
             {section.audio && !section.audioFirst && <AudioBar audio={section.audio} />}
 
@@ -246,7 +273,7 @@ export function DingkePanel({ classCode, onToggleSidebar, onShowActivities }: Di
           {sections.map((s, i) => (
             <button
               key={s.id}
-              onClick={() => setIndex(i)}
+              onClick={() => goTo(i)}
               className={`px-2.5 py-1.5 rounded-lg text-[11px] font-semibold whitespace-nowrap smooth-transition ${
                 i === index
                   ? 'bg-emerald-600/20 text-emerald-300 border border-emerald-700/40'

@@ -95,6 +95,32 @@ body {
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* 定课 slide-to-slide transitions — a fresh DOM node (keyed per section) runs
+   these on mount, so no JS-side reflow trick is needed. Forward and backward
+   navigation slide in from opposite sides, matching the direction the host
+   just pressed. Kept subtle: this plays during a live Zoom session, not a
+   marketing site. */
+@keyframes dingke-enter-fwd {
+  from { opacity: 0; transform: translateX(14px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+@keyframes dingke-enter-back {
+  from { opacity: 0; transform: translateX(-14px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+.dingke-enter-fwd {
+  animation: dingke-enter-fwd 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.dingke-enter-back {
+  animation: dingke-enter-back 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+}
+@media (prefers-reduced-motion: reduce) {
+  .dingke-enter-fwd,
+  .dingke-enter-back {
+    animation: none;
+  }
+}
+
 /* Custom utilities for horizontal scrolling overlays */
 .scroll-hint-right {
   position: relative;

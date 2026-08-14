@@ -49,8 +49,16 @@ function toRow(line: string): SlideRow {
  * sizes would push its last line under the step bar. The `min-h-full` wrapper
  * keeps the content optically centred while still allowing a scroll when it
  * genuinely doesn't fit (very large zoom on a very short screen).
+ *
+ * `sectionId` + `direction` drive the transition when the host moves between
+ * steps: keying the row list by section id gives the new slide a fresh DOM
+ * node, so its `dingke-enter-*` class plays on mount with no JS-side reflow
+ * trick. Only this inner block is keyed — the gradient background and the
+ * scroll container stay put, so the shared screen doesn't flash.
  */
-export function SlidePane({ slide, zoom }: { slide: DingkeSlide; zoom: number }) {
+export function SlidePane({
+  slide, zoom, sectionId, direction,
+}: { slide: DingkeSlide; zoom: number; sectionId: string; direction: 1 | -1 }) {
   const size = (rem: number, vh: number) => `min(${rem * zoom}rem, ${vh}vh)`
 
   const rows: SlideRow[] = [
@@ -64,7 +72,10 @@ export function SlidePane({ slide, zoom }: { slide: DingkeSlide; zoom: number })
       style={{ background: `linear-gradient(160deg, ${DECK_SLATE} 0%, ${DECK_SLATE_DEEP} 100%)` }}
     >
       <div className="min-h-full flex flex-col items-center justify-center px-6 py-4 text-center">
-        <div className="w-full max-w-3xl">
+        <div
+          key={sectionId}
+          className={`w-full max-w-3xl ${direction > 0 ? 'dingke-enter-fwd' : 'dingke-enter-back'}`}
+        >
           {rows.map((row, i) => {
             const prev = rows[i - 1]
             switch (row.kind) {
