@@ -40,9 +40,8 @@ export const DEFAULT_DINGKE_SECTIONS: DingkeSection[] = [
     title: '开场',
     subtitle: '开场音乐 · 共同愿景',
     slide: {
-      kicker: '定课开始前',
+      kicker: '定课开始',
       lines: ['让企业家走向觉醒', '让经营成为修行', '让商场成为道场', '让商业利益众生'],
-      chant: true,
     },
     blocks: [
       { kind: 'note', text: '等候师兄进入会议室时，可先播放「活动展示」；人到齐后再开始。' },
@@ -57,8 +56,8 @@ export const DEFAULT_DINGKE_SECTIONS: DingkeSection[] = [
     title: '菩提导航',
     subtitle: '五处用心 · 修学管理',
     slide: {
-      headline: '菩提导航',
-      lines: ['开始修学管理', '五处用心 —— 慈经 —— 修学管理'],
+      kicker: '定课开始',
+      lines: ['菩提导航', '开始修学管理', '五处用心 —— 慈经 —— 修学管理'],
     },
     blocks: [
       { kind: 'cue', text: '主持人白：请大家打开「菩提导航」APP，进入「五处用心」——「慈经」——「修学管理」，做好「态度」与「慈经修习」的管理，我们正式进入定课流程。' },
@@ -69,10 +68,14 @@ export const DEFAULT_DINGKE_SECTIONS: DingkeSection[] = [
     title: '三称本师圣号',
     subtitle: '大乘皈敬颂',
     slide: {
-      kicker: '合掌',
-      headline: '南无本师释迦牟尼佛',
-      lines: ['诸佛正法贤圣僧', '直至菩提永皈依', '我以所修诸善根', '为利有情愿成佛'],
-      chant: true,
+      kicker: '皈依发心偈',
+      lines: [
+        '南无本师释迦牟尼佛 x3',
+        '诸佛正法贤圣僧',
+        '直至菩提永皈依',
+        '我以所修诸善根',
+        '为利有情愿成佛',
+      ],
     },
     blocks: [
       { kind: 'cue', text: '主持人白：大众合掌，三称本师圣号。' },
@@ -92,9 +95,8 @@ export const DEFAULT_DINGKE_SECTIONS: DingkeSection[] = [
         '理解、接受、运用，',
         '观念、心态、品质。',
         '# 修学态度',
-        '真诚、认真、老实',
+        '真诚、认真、老实。',
       ],
-      chant: true,
     },
     blocks: [
       { kind: 'cue', text: '主持人白：大众一起至心念诵十八字方针。' },
@@ -122,17 +124,17 @@ export const DEFAULT_DINGKE_SECTIONS: DingkeSection[] = [
     subtitle: '八步三禅 · 十六字窍诀',
     slide: {
       kicker: '修学方法',
-      headline: '八步三禅',
       // The room only sees the shape of the method — 八步三禅 and the two 禅修 —
       // plus the 窍诀 it chants. The eight steps stay in the host's script; eight
       // full sentences on screen is what made the original slide unreadable.
       lines: [
-        '正念禅修 · 利他禅修',
+        '八步三禅',
+        '正念禅修',
+        '利他禅修',
         '# 十六字窍诀',
         '树立正见，认清真相，',
         '摆脱错误，重复正确。',
       ],
-      chant: true,
     },
     // 八步骤 before 十六字窍诀: the 窍诀 is the summary the room chants once the
     // eight steps have been read through.
@@ -176,8 +178,7 @@ export const DEFAULT_DINGKE_SECTIONS: DingkeSection[] = [
     subtitle: '音频含止静，播完即可',
     slide: {
       kicker: '禅修',
-      headline: '《慈经》',
-      lines: ['请大家端身正坐，收摄身心，恭听《慈经》'],
+      lines: ['《慈经》', '请大家端身正坐，收摄身心，恭听《慈经》'],
     },
     blocks: [
       { kind: 'cue', text: '主持人缓缓念诵禅修引导：' },
@@ -192,15 +193,13 @@ export const DEFAULT_DINGKE_SECTIONS: DingkeSection[] = [
     id: 'fourimmeasurables',
     title: '四无量心',
     slide: {
-      kicker: '合掌 · 至诚修习',
-      headline: '四无量心',
+      kicker: '至诚修习 - 四无量心',
       lines: [
         '愿诸众生永具安乐及安乐因',
         '愿诸众生永离众苦及众苦因',
         '愿诸众生永具无苦之乐身心愉悦',
         '愿诸众生远离贪嗔之心住平等舍',
       ],
-      chant: true,
     },
     blocks: [
       { kind: 'cue', text: '轮值主持、组长或辅助员白：在座下我们要不断践行慈心，把想法变成做法，把祝愿变成行动。' },
@@ -212,10 +211,8 @@ export const DEFAULT_DINGKE_SECTIONS: DingkeSection[] = [
     id: 'dedication',
     title: '回向',
     slide: {
-      kicker: '大众至诚回向',
-      headline: '回向偈',
+      kicker: '回向偈',
       lines: ['愿以此功德', '普及于一切', '我等与众生', '皆共成佛道'],
-      chant: true,
     },
     blocks: [
       { kind: 'cue', text: '轮值主持、组长或辅助员白：今天定课圆满，我们将定课功德回向给——' },
@@ -234,8 +231,8 @@ export const DEFAULT_DINGKE_SECTIONS: DingkeSection[] = [
     subtitle: '定课打卡',
     slide: {
       kicker: '定课圆满',
-      headline: '完成菩提导航打卡',
       lines: [
+        '完成菩提导航打卡',
         '五处用心 —— 定课 —— 打卡',
         '阅读「心理提示」',
         '完成「心理积累」、「心理检测」',

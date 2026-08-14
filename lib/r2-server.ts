@@ -683,7 +683,7 @@ export async function setDingkeOverride(
   const base = getDefaultSection(sectionId)
 
   // Two things are filtered out here. An empty string means "clear this field
-  // back to the default" rather than "override with blank" — a blank headline
+  // back to the default" rather than "override with blank" — a blank title
   // would just render as a hole. And a value identical to the default is not
   // stored at all: the editor prefills from the resolved section, so saving an
   // untouched field would otherwise freeze it against future script updates.
@@ -696,8 +696,6 @@ export async function setDingkeOverride(
   if (title) cleaned.title = title
   const subtitle = keep(patch.subtitle, base?.subtitle)
   if (subtitle) cleaned.subtitle = subtitle
-  const headline = keep(patch.headline, base?.slide.headline)
-  if (headline) cleaned.headline = headline
   const lines = patch.slideLines?.map(l => l.trim()).filter(Boolean)
   if (lines?.length && lines.join('\n') !== base?.slide.lines.join('\n')) cleaned.slideLines = lines
   const body = keep(patch.body, base ? blocksToBody(base.blocks) : undefined)
