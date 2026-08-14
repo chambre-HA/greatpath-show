@@ -48,7 +48,6 @@ export function applyOverride(section: DingkeSection, override?: DingkeSectionOv
     subtitle: override.subtitle ?? section.subtitle,
     slide: {
       ...section.slide,
-      headline: override.headline ?? section.slide.headline,
       lines: override.slideLines ?? section.slide.lines,
     },
     blocks: override.body ? parseBody(override.body) : section.blocks,

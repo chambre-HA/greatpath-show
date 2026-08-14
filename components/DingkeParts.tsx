@@ -48,25 +48,18 @@ export function SlidePane({ slide, zoom }: { slide: DingkeSlide; zoom: number })
             {slide.kicker}
           </p>
         )}
-        {slide.headline && (
-          <h2
-            className="font-extrabold text-white leading-tight tracking-tight mb-5"
-            style={{ fontSize: size(2.1, 8.5) }}
-          >
-            {slide.headline}
-          </h2>
-        )}
-        <div className={slide.chant ? 'space-y-2' : 'space-y-1.5 max-w-3xl'}>
+        {/* One body size for every line, as the deck has it — a line that needs
+            to stand out gets its own `#` label above it rather than its own
+            type scale. */}
+        <div className="space-y-2 max-w-3xl">
           {slide.lines.map((line, i) => {
-            // `# ...` marks a group label, which is how one slide shows several
-            // named groups in order (十八字方针 above its lines, then 修学态度).
             const label = line.startsWith('#') ? line.replace(/^#\s*/, '') : null
             if (label) {
               return (
                 <p
                   key={i}
-                  className={`uppercase tracking-[0.3em] font-bold text-white/50 ${i > 0 ? 'pt-5' : ''}`}
-                  style={{ fontSize: size(0.68, 2.6) }}
+                  className={`uppercase tracking-[0.3em] font-bold ${i > 0 ? 'pt-5' : ''}`}
+                  style={{ fontSize: size(0.68, 2.6), color: DECK_AMBER }}
                 >
                   {label}
                 </p>
@@ -75,10 +68,8 @@ export function SlidePane({ slide, zoom }: { slide: DingkeSlide; zoom: number })
             return (
               <p
                 key={i}
-                className={slide.chant
-                  ? 'text-white font-semibold tracking-[0.12em] leading-snug'
-                  : 'text-white/85 leading-relaxed'}
-                style={{ fontSize: slide.chant ? size(1.5, 5.6) : size(1.15, 4.4) }}
+                className="text-white font-semibold tracking-[0.1em] leading-snug"
+                style={{ fontSize: size(1.5, 5.6) }}
               >
                 {line}
               </p>

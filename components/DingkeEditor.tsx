@@ -22,7 +22,6 @@ export function DingkeEditor({
 }) {
   const [title, setTitle] = useState(section.title)
   const [subtitle, setSubtitle] = useState(section.subtitle ?? '')
-  const [headline, setHeadline] = useState(section.slide.headline ?? '')
   const [slideLines, setSlideLines] = useState(section.slide.lines.join('\n'))
   const [body, setBody] = useState(blocksToBody(section.blocks))
   const [busy, setBusy] = useState(false)
@@ -69,10 +68,6 @@ export function DingkeEditor({
           <div>
             <label className={label}>副标题</label>
             <input className={field} value={subtitle} onChange={e => setSubtitle(e.target.value)} placeholder="可留空" />
-          </div>
-          <div>
-            <label className={label}>大字标题</label>
-            <input className={field} value={headline} onChange={e => setHeadline(e.target.value)} />
           </div>
           <div>
             <label className={label}>大字内容（每行一句）</label>
@@ -124,7 +119,6 @@ export function DingkeEditor({
             onClick={() => run(() => onSave({
               title,
               subtitle,
-              headline,
               slideLines: slideLines.split('\n'),
               body,
             }))}

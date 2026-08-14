@@ -9,7 +9,6 @@ export interface DingkeScript {
 export interface DingkeSectionEdit {
   title: string
   subtitle: string
-  headline: string
   slideLines: string[]
   body: string
 }

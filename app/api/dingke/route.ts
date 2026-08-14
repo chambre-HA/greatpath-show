@@ -39,7 +39,6 @@ export async function POST(req: Request) {
       await setDingkeOverride(classCode, body.sectionId, {
         title: typeof body.title === 'string' ? body.title : undefined,
         subtitle: typeof body.subtitle === 'string' ? body.subtitle : undefined,
-        headline: typeof body.headline === 'string' ? body.headline : undefined,
         slideLines: Array.isArray(body.slideLines) ? body.slideLines.filter((l: unknown) => typeof l === 'string') : undefined,
         body: typeof body.body === 'string' ? body.body : undefined,
       })

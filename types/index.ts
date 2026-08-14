@@ -155,20 +155,21 @@ export type DingkeBlock =
   | { kind: 'list'; items: string[]; label?: string }
   | { kind: 'dedication' }
 
-/** The large-type half of the screen — what the whole room reads off the share. */
+/**
+ * The large-type half of the screen — what the whole room reads off the share.
+ *
+ * Deliberately flat, mirroring phone-dingke.pptx: every slide there is a small
+ * amber label followed by same-size body lines, with no separate headline tier.
+ */
 export interface DingkeSlide {
-  /** Small label above the headline. */
+  /** Small label opening the slide. */
   kicker?: string
-  /** Omit when the slide's own lines are the headline (e.g. 十八字方针). */
-  headline?: string
   /**
-   * One line per row. A line starting with `#` renders as a small label instead,
+   * One line per row. A line starting with `#` renders as a further small label,
    * which is how a slide shows several named groups in sequence — 十八字方针 above
    * its three lines, then 修学态度 above the three attitudes.
    */
   lines: string[]
-  /** Chant lines get centred, wider-tracked, one line per row. */
-  chant?: boolean
 }
 
 export interface DingkeSection {
@@ -191,7 +192,6 @@ export interface DingkeSection {
 export interface DingkeSectionOverride {
   title?: string
   subtitle?: string
-  headline?: string
   /** Replaces DingkeSlide.lines. */
   slideLines?: string[]
   /**
