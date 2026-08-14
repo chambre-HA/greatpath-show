@@ -9,6 +9,7 @@
 /build
 /dist
 .turbo
+*.tsbuildinfo
 # Testing
 /coverage
 # Env / secrets — NEVER commit (templates *.example are kept)
