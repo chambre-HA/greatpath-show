@@ -2,13 +2,14 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
-  ChevronLeft, ChevronRight, Maximize, Menu, Minimize, Pencil, Sparkles, Type,
+  ChevronLeft, ChevronRight, Maximize, Menu, Minimize, Pencil, QrCode, Sparkles, Type,
 } from 'lucide-react'
+import { QRCodeSVG } from 'qrcode.react'
 import { AudioBar, ScriptBlock, SlidePane } from './DingkeParts'
 import { DingkeEditor } from './DingkeEditor'
 import { getDingkeStore, type DingkeSectionEdit } from '@/lib/dingke-store'
 import { DEFAULT_DINGKE_SECTIONS } from '@/lib/dingke-content'
-import type { DedicationGroup, DingkeSection } from '@/types'
+import type { ClassSignin, DedicationGroup, DingkeSection } from '@/types'
 
 /** Script text scale, persisted per browser — hosts land on very different phones. */
 const ZOOM_STEPS = [0.85, 1, 1.15, 1.35, 1.6]
@@ -30,6 +31,7 @@ export function DingkePanel({ classCode, onToggleSidebar, onShowActivities }: Di
   const [index, setIndex] = useState(0)
   const [groups, setGroups] = useState<DedicationGroup[]>([])
   const [dedicationLoading, setDedicationLoading] = useState(true)
+  const [signin, setSignin] = useState<ClassSignin | null>(null)
   const [zoomStep, setZoomStep] = useState(1)
   const [editing, setEditing] = useState(false)
   const [fullscreen, setFullscreen] = useState(false)
@@ -68,6 +70,25 @@ export function DingkePanel({ classCode, onToggleSidebar, onShowActivities }: Di
         console.error('Failed to load 回向名单', e)
       } finally {
         if (!cancelled) setDedicationLoading(false)
+      }
+    }
+    load()
+    return () => { cancelled = true }
+  }, [classCode])
+
+  // Same lookup the class page itself uses — carries the class's own sign-in
+  // link + passcode, shown obviously at the end of the script so the host
+  // remembers to prompt attendees to check in before closing the session.
+  useEffect(() => {
+    let cancelled = false
+    async function load() {
+      try {
+        const res = await fetch(`/api/classes?code=${encodeURIComponent(classCode)}`, { cache: 'no-store' })
+        if (!res.ok) throw new Error(String(res.status))
+        const data = await res.json()
+        if (!cancelled) setSignin(data.signin ?? null)
+      } catch (e) {
+        console.error('Failed to load 签到链接', e)
       }
     }
     load()
@@ -250,6 +271,30 @@ export function DingkePanel({ classCode, onToggleSidebar, onShowActivities }: Di
               {section.blocks.map((block, i) => (
                 <ScriptBlock key={i} block={block} groups={groups} dedicationLoading={dedicationLoading} />
               ))}
+
+              {/* The class's own check-in link, made obvious at the very end of
+                  the script — this is the host's last cue before closing, so
+                  it gets the one accent border/QR treatment rather than
+                  blending in with the surrounding script text. */}
+              {isLast && signin && (
+                <div className="rounded-[var(--radius-md)] border-2 border-orange-500/50 bg-orange-950/10 p-4 flex items-center gap-4">
+                  <div className="bg-white p-2 rounded-[var(--radius-sm)] shrink-0">
+                    <QRCodeSVG value={signin.url} size={72} level="M" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="flex items-center gap-1.5 text-[0.68em] uppercase tracking-[0.2em] font-bold text-orange-400">
+                      <QrCode size={12} />
+                      <span>请扫码签到</span>
+                    </p>
+                    <p className="text-[0.7em] text-zinc-400 truncate mt-0.5">{signin.label}</p>
+                    {signin.passcode && (
+                      <p className="text-2xl font-bold text-orange-300 tracking-[0.2em] mt-1">
+                        {signin.passcode}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
 
             {section.audio && !section.audioFirst && <AudioBar audio={section.audio} />}
