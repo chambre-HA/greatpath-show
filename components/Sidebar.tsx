@@ -117,21 +117,21 @@ export function Sidebar({ className, activeFunction, isOpen, signin, onSelectFun
                   ) : (
                     <span className="block text-[11px] text-zinc-400 truncate">{signin.label}</span>
                   )}
+                  <a
+                    href={signin.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={e => e.stopPropagation()}
+                    className="flex items-center gap-1 mt-1 text-[10px] font-bold text-orange-300 underline underline-offset-4 hover:text-orange-200 smooth-transition"
+                  >
+                    <ExternalLink size={10} />
+                    <span>打开签到页</span>
+                  </a>
                 </span>
                 <div className="bg-white p-1.5 rounded-[var(--radius-sm)] shrink-0">
                   <QRCodeSVG value={signin.url} size={72} level="M" />
                 </div>
               </button>
-              <a
-                href={signin.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={e => e.stopPropagation()}
-                className="flex items-center gap-1 px-3 pb-1.5 text-[10px] font-bold text-orange-300 underline underline-offset-4 hover:text-orange-200 smooth-transition"
-              >
-                <ExternalLink size={10} />
-                <span>打开签到页</span>
-              </a>
             </div>
           ) : (
             <button
