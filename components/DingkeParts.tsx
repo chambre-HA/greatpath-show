@@ -5,15 +5,15 @@ import { Pause, Play, RotateCcw, Volume1, Volume2, VolumeX } from 'lucide-react'
 import type { DedicationGroup, DingkeAudio, DingkeBlock, DingkeSlide, DingkeVideo } from '@/types'
 
 /**
- * Palette lifted from the 定课 deck itself, so the shared screen still looks
- * like the thing everyone has been reading for years: slides sit on its slate
- * blue, and its amber is the one accent. The host's script panel deliberately
- * uses none of it — it stays near-black and low-contrast so the two halves read
- * as "the room's screen" and "my notes" at a glance.
+ * Ink-slate palette matching the rest of the app: slides sit on the same deep
+ * graphite as every other screen, with the brand's orange as the one accent
+ * for kickers and section labels. The host's script panel deliberately stays
+ * flatter and lower-contrast than the slide itself, so the two halves still
+ * read as "the room's screen" and "my notes" at a glance.
  */
-const DECK_SLATE = '#465C70'
-const DECK_SLATE_DEEP = '#3A4D5E'
-const DECK_AMBER = '#FEAE00'
+const DECK_SLATE = '#202127'
+const DECK_SLATE_DEEP = '#131316'
+const DECK_AMBER = '#F97316'
 
 export function formatClock(seconds: number): string {
   const total = Math.max(0, Math.round(seconds))
@@ -107,7 +107,7 @@ export function SlidePane({
                 return (
                   <p
                     key={i}
-                    className={`text-white font-semibold leading-snug tracking-[0.08em] ${
+                    className={`font-editorial text-white font-semibold leading-snug tracking-[0.04em] ${
                       prev && prev.kind !== 'label' ? 'mt-2.5' : ''
                     }`}
                     style={{ fontSize: size(1.55, 5) }}
@@ -125,7 +125,7 @@ export function SlidePane({
             controls
             playsInline
             preload="none"
-            className="w-full max-w-3xl rounded-2xl bg-black/40 shadow-xl"
+            className="w-full max-w-3xl rounded-[var(--radius-md)] bg-black/40 shadow-xl"
           />
         )}
       </div>
@@ -140,26 +140,26 @@ function DedicationBlock({ groups, loading }: { groups: DedicationGroup[]; loadi
     .map(g => ({ ...g, people: g.people.filter(p => !p.paused) }))
     .filter(g => g.people.length > 0)
 
-  if (loading) return <p className="text-slate-600 italic">读取回向名单中…</p>
+  if (loading) return <p className="text-zinc-600 italic">读取回向名单中…</p>
   if (active.length === 0) {
     return (
-      <p className="text-slate-500 italic leading-relaxed">
+      <p className="text-zinc-500 italic leading-relaxed">
         本周回向名单为空 —— 可在侧栏「回向名单」中添加，或直接念诵下方回向偈。
       </p>
     )
   }
 
   return (
-    <div className="space-y-2.5 rounded-xl border border-slate-800/80 bg-slate-900/40 px-4 py-3">
-      <p className="text-[0.7em] uppercase tracking-wider font-bold text-slate-500">本周回向名单</p>
+    <div className="space-y-2.5 rounded-[var(--radius-sm)] border border-zinc-800 bg-zinc-900/40 px-4 py-3">
+      <p className="text-[0.7em] uppercase tracking-wider font-bold text-zinc-500">本周回向名单</p>
       {active.map((group, i) => (
-        <div key={group.id} className="leading-relaxed text-slate-400">
+        <div key={group.id} className="leading-relaxed text-zinc-400">
           <span>{i + 1}. 祝愿 </span>
-          <span className="text-slate-200 font-semibold">{group.people.map(p => p.name).join('、')}</span>
+          <span className="text-zinc-200 font-semibold">{group.people.map(p => p.name).join('、')}</span>
           <span>，{group.purpose}。</span>
         </div>
       ))}
-      <p className="text-slate-400 leading-relaxed">以及一切有同样心愿的众生，愿他们所愿皆成！</p>
+      <p className="text-zinc-400 leading-relaxed">以及一切有同样心愿的众生，愿他们所愿皆成！</p>
     </div>
   )
 }
@@ -175,11 +175,11 @@ export function ScriptBlock({
     case 'cue':
       return (
         <p
-          className="rounded-xl border px-4 py-2.5 font-semibold leading-relaxed"
+          className="rounded-[var(--radius-sm)] border px-4 py-2.5 font-semibold leading-relaxed"
           style={{
             color: DECK_AMBER,
-            borderColor: 'rgba(254, 174, 0, 0.28)',
-            backgroundColor: 'rgba(254, 174, 0, 0.07)',
+            borderColor: 'rgba(249, 115, 22, 0.28)',
+            backgroundColor: 'rgba(249, 115, 22, 0.07)',
           }}
         >
           {block.text}
@@ -187,33 +187,33 @@ export function ScriptBlock({
       )
     case 'chant':
       return (
-        <div className="rounded-xl bg-slate-900/40 border border-slate-800/80 px-4 py-3">
+        <div className="rounded-[var(--radius-sm)] bg-zinc-900/40 border border-zinc-800 px-4 py-3">
           {block.label && (
-            <p className="text-[0.7em] uppercase tracking-wider font-bold text-slate-600 mb-1.5">{block.label}</p>
+            <p className="text-[0.7em] uppercase tracking-wider font-bold text-zinc-600 mb-1.5">{block.label}</p>
           )}
-          <p className="text-slate-200 font-semibold leading-loose tracking-[0.08em] whitespace-pre-line">
+          <p className="text-zinc-200 font-semibold leading-loose tracking-[0.04em] whitespace-pre-line">
             {block.text}
           </p>
         </div>
       )
     case 'note':
-      return <p className="text-slate-500 italic leading-relaxed">※ {block.text}</p>
+      return <p className="text-zinc-500 italic leading-relaxed">※ {block.text}</p>
     case 'list':
       return (
         <div className="space-y-1.5">
           {block.label && (
-            <p className="text-[0.7em] uppercase tracking-wider font-bold text-slate-600">{block.label}</p>
+            <p className="text-[0.7em] uppercase tracking-wider font-bold text-zinc-600">{block.label}</p>
           )}
           {block.items.map((item, i) => (
-            <p key={i} className="text-slate-400 leading-relaxed">{item}</p>
+            <p key={i} className="text-zinc-400 leading-relaxed">{item}</p>
           ))}
         </div>
       )
     default:
       return (
         <div>
-          {block.label && <p className="text-slate-200 font-bold mb-1 tracking-[0.15em]">{block.label}</p>}
-          <p className="text-slate-400 leading-relaxed whitespace-pre-line">{block.text}</p>
+          {block.label && <p className="text-zinc-200 font-bold mb-1 tracking-[0.15em]">{block.label}</p>}
+          <p className="text-zinc-400 leading-relaxed whitespace-pre-line">{block.text}</p>
         </div>
       )
   }
@@ -263,7 +263,7 @@ export function AudioBar({ audio }: { audio: DingkeAudio }) {
   const fraction = duration > 0 ? Math.min(1, position / duration) : 0
 
   return (
-    <div className="rounded-2xl border border-slate-800/80 bg-slate-900/40 px-4 py-3 space-y-2.5">
+    <div className="rounded-[var(--radius-md)] border border-zinc-800/80 bg-zinc-900/40 px-4 py-3 space-y-2.5">
       <audio
         ref={ref}
         src={audio.src}
@@ -280,21 +280,21 @@ export function AudioBar({ audio }: { audio: DingkeAudio }) {
       <div className="flex items-center gap-3">
         <button
           onClick={toggle}
-          className="w-11 h-11 shrink-0 rounded-full flex items-center justify-center text-slate-950 active:scale-[0.96] smooth-transition hover:brightness-110"
+          className="w-11 h-11 shrink-0 rounded-[var(--radius-sm)] flex items-center justify-center text-zinc-950 active:scale-[0.96] smooth-transition hover:brightness-110"
           style={{ backgroundColor: DECK_AMBER }}
           aria-label={playing ? '暂停' : `播放${audio.label}`}
         >
           {playing ? <Pause size={18} /> : <Play size={18} className="ml-0.5" />}
         </button>
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-bold text-slate-200 truncate">{audio.label}</p>
-          <p className="text-[11px] text-slate-500 font-mono tabular-nums">
+          <p className="text-sm font-bold text-zinc-200 truncate">{audio.label}</p>
+          <p className="text-[11px] text-zinc-500 font-mono tabular-nums">
             {formatClock(position)} / {formatClock(duration)}
           </p>
         </div>
         <button
           onClick={() => seek(0)}
-          className="p-2 text-slate-500 hover:text-slate-200 smooth-transition"
+          className="p-2 text-zinc-500 hover:text-zinc-200 smooth-transition"
           aria-label="从头播放"
         >
           <RotateCcw size={15} />
@@ -307,7 +307,7 @@ export function AudioBar({ audio }: { audio: DingkeAudio }) {
         max={1000}
         value={Math.round(fraction * 1000)}
         onChange={e => seek((parseInt(e.target.value) / 1000) * duration)}
-        className="w-full bg-slate-800 rounded-lg appearance-none h-1 cursor-pointer"
+        className="w-full bg-zinc-800 rounded-[var(--radius-sm)] appearance-none h-1 cursor-pointer"
         style={{ accentColor: DECK_AMBER }}
         aria-label="播放进度"
       />
@@ -315,7 +315,7 @@ export function AudioBar({ audio }: { audio: DingkeAudio }) {
       <div className="flex items-center gap-2">
         <button
           onClick={() => setMuted(m => !m)}
-          className="text-slate-500 hover:text-slate-200 smooth-transition"
+          className="text-zinc-500 hover:text-zinc-200 smooth-transition"
           aria-label="静音"
         >
           <VolumeIcon size={15} />
@@ -330,7 +330,7 @@ export function AudioBar({ audio }: { audio: DingkeAudio }) {
             setVolume(v)
             if (v > 0) setMuted(false)
           }}
-          className="flex-1 accent-slate-500 bg-slate-800 rounded-lg appearance-none h-1 cursor-pointer"
+          className="flex-1 accent-zinc-500 bg-zinc-800 rounded-[var(--radius-sm)] appearance-none h-1 cursor-pointer"
           aria-label="音量"
         />
       </div>

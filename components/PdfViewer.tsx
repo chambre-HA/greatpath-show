@@ -129,12 +129,12 @@ export function PdfViewer({ url, r2Key }: PdfViewerProps) {
   }
 
   return (
-    <div ref={containerRef} className="relative w-full h-full bg-gray-900 overflow-auto">
+    <div ref={containerRef} className="relative w-full h-full bg-zinc-900 overflow-auto">
       <div className="min-h-full flex flex-col items-center py-6 pb-20">
         <Document
           file={sourceUrl}
           onLoadSuccess={({ numPages }) => setNumPages(numPages)}
-          loading={<div className="text-gray-400 text-sm mt-20">Loading PDF…</div>}
+          loading={<div className="text-zinc-400 text-sm mt-20">Loading PDF…</div>}
           error={<div className="text-red-400 text-sm p-4 mt-20">Failed to load PDF.</div>}
         >
           <Page
@@ -147,9 +147,9 @@ export function PdfViewer({ url, r2Key }: PdfViewerProps) {
       </div>
 
       <div className="sticky bottom-4 z-10 flex justify-center pointer-events-none">
-        <div className="pointer-events-auto flex items-center gap-1 bg-gray-950/90 backdrop-blur border border-gray-800 rounded-full px-3 py-1.5">
+        <div className="pointer-events-auto flex items-center gap-1 bg-zinc-950/90 backdrop-blur border border-zinc-800 rounded-[var(--radius-sm)] px-3 py-1.5">
           <button onClick={prev} disabled={page <= 1}
-            className="p-1.5 text-gray-300 hover:text-white disabled:opacity-30" aria-label="Previous page">
+            className="p-1.5 text-zinc-300 hover:text-white disabled:opacity-30" aria-label="Previous page">
             <ChevronLeft size={16} />
           </button>
           {editing ? (
@@ -173,40 +173,40 @@ export function PdfViewer({ url, r2Key }: PdfViewerProps) {
                 if (n >= 1 && n <= numPages) goToPage(n)
                 setEditing(false)
               }}
-              className="w-10 text-center text-xs text-white bg-gray-800 border border-gray-600 rounded px-1 py-0.5 outline-none focus:border-gray-400 tabular-nums"
+              className="w-10 text-center text-xs text-white bg-zinc-800 border border-zinc-600 rounded px-1 py-0.5 outline-none focus:border-zinc-400 tabular-nums"
             />
           ) : (
             <button
               onClick={() => { setDraft(String(page)); setEditing(true) }}
-              className="text-xs text-gray-300 hover:text-white tabular-nums min-w-[4rem] text-center hover:bg-gray-800 rounded px-1 py-0.5 transition-colors"
+              className="text-xs text-zinc-300 hover:text-white tabular-nums min-w-[4rem] text-center hover:bg-zinc-800 rounded px-1 py-0.5 transition-colors"
               title="Click to jump to page"
             >
               {page} / {numPages || '–'}
             </button>
           )}
           <button onClick={next} disabled={page >= numPages}
-            className="p-1.5 text-gray-300 hover:text-white disabled:opacity-30" aria-label="Next page">
+            className="p-1.5 text-zinc-300 hover:text-white disabled:opacity-30" aria-label="Next page">
             <ChevronRight size={16} />
           </button>
 
-          <div className="w-px h-4 bg-gray-700 mx-1" />
+          <div className="w-px h-4 bg-zinc-700 mx-1" />
 
           <button onClick={zoomOut} disabled={zoomIdx <= 0}
-            className="p-1.5 text-gray-300 hover:text-white disabled:opacity-30" aria-label="Zoom out">
+            className="p-1.5 text-zinc-300 hover:text-white disabled:opacity-30" aria-label="Zoom out">
             <ZoomOut size={16} />
           </button>
-          <span className="text-xs text-gray-400 tabular-nums w-10 text-center">
+          <span className="text-xs text-zinc-400 tabular-nums w-10 text-center">
             {Math.round(zoom * 100)}%
           </span>
           <button onClick={zoomIn} disabled={zoomIdx >= ZOOM_STEPS.length - 1}
-            className="p-1.5 text-gray-300 hover:text-white disabled:opacity-30" aria-label="Zoom in">
+            className="p-1.5 text-zinc-300 hover:text-white disabled:opacity-30" aria-label="Zoom in">
             <ZoomIn size={16} />
           </button>
 
-          <div className="w-px h-4 bg-gray-700 mx-1" />
+          <div className="w-px h-4 bg-zinc-700 mx-1" />
 
           <button onClick={toggleFullscreen}
-            className="p-1.5 text-gray-300 hover:text-white" aria-label={fullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}>
+            className="p-1.5 text-zinc-300 hover:text-white" aria-label={fullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}>
             {fullscreen ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
           </button>
         </div>

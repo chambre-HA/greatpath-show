@@ -49,7 +49,7 @@ function LinkForm({ onAdd, onClose }: { onAdd: (link: ShowLink) => Promise<void>
 
   return (
     <form onSubmit={handleSubmit} className="space-y-3.5 mt-2">
-      <p className="text-xs text-slate-400 leading-snug">
+      <p className="text-xs text-zinc-400 leading-snug">
         输入第三方云盘（如 OneDrive 嵌入链接、Google Slides 链接等）或直接文件地址。
       </p>
       <div className="space-y-3">
@@ -58,7 +58,7 @@ function LinkForm({ onAdd, onClose }: { onAdd: (link: ShowLink) => Promise<void>
           placeholder="文件标题（选填，默认解析文件名）"
           value={title}
           onChange={e => setTitle(e.target.value)}
-          className="w-full px-3.5 py-2.5 text-sm rounded-xl bg-slate-950/80 border border-slate-800 text-slate-100 placeholder-slate-600 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/50 transition-all smooth-transition"
+          className="w-full px-3.5 py-2.5 text-sm rounded-[var(--radius-sm)] bg-zinc-950/80 border border-zinc-800 text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500/50 transition-all smooth-transition"
         />
         <input
           type="url"
@@ -66,18 +66,18 @@ function LinkForm({ onAdd, onClose }: { onAdd: (link: ShowLink) => Promise<void>
           value={url}
           onChange={e => setUrl(e.target.value)}
           required
-          className="w-full px-3.5 py-2.5 text-sm rounded-xl bg-slate-950/80 border border-slate-800 text-slate-100 placeholder-slate-600 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/50 transition-all smooth-transition"
+          className="w-full px-3.5 py-2.5 text-sm rounded-[var(--radius-sm)] bg-zinc-950/80 border border-zinc-800 text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500/50 transition-all smooth-transition"
         />
       </div>
       {error && (
-        <p className="text-xs text-rose-400 bg-rose-950/20 py-1.5 px-3 rounded-lg border border-rose-900/30">
+        <p className="text-xs text-rose-400 bg-rose-950/20 py-1.5 px-3 rounded-[var(--radius-sm)] border border-rose-900/30">
           {error}
         </p>
       )}
       <button
         type="submit"
         disabled={busy}
-        className="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold active:scale-[0.98] disabled:opacity-40 disabled:pointer-events-none transition-all duration-200"
+        className="w-full py-2.5 rounded-[var(--radius-sm)] bg-orange-600 hover:bg-orange-500 text-white font-semibold active:scale-[0.98] disabled:opacity-40 disabled:pointer-events-none transition-all duration-200"
       >
         {busy ? '正在添加...' : '确认添加'}
       </button>
@@ -179,25 +179,25 @@ function UploadForm({ classCode, onAdd, onClose, onSwitchToLink }: { classCode: 
   if (sizeError) {
     return (
       <div className="space-y-3 mt-2">
-        <div className="rounded-2xl border border-amber-900 bg-amber-950/20 p-4 space-y-3">
+        <div className="rounded-[var(--radius-md)] border border-amber-900 bg-amber-950/20 p-4 space-y-3">
           <div className="space-y-1">
             <p className="text-xs font-bold text-amber-300">文件大小超出限制</p>
             <p className="text-[11px] text-amber-500 leading-relaxed">
               该文件超过了 {MAX_UPLOAD_MB} MB 的上传上限，无法直接上传。请改用下方方法之一，通过「添加链接」引入该文件。
             </p>
           </div>
-          <div className="space-y-2 rounded-xl bg-slate-950/60 border border-amber-900/40 p-3">
+          <div className="space-y-2 rounded-[var(--radius-sm)] bg-zinc-950/60 border border-amber-900/40 p-3">
             <p className="text-[11px] font-bold text-amber-300">方法一：OneDrive 嵌入链接（推荐用于 PPT/PDF）</p>
-            <ol className="text-[11px] text-slate-300 leading-relaxed list-decimal list-inside space-y-0.5">
+            <ol className="text-[11px] text-zinc-300 leading-relaxed list-decimal list-inside space-y-0.5">
               <li>登录 OneDrive，将文件上传到你的网盘</li>
               <li>右键点击文件 → 选择「嵌入」(Embed)</li>
               <li>复制弹出框中 <code className="text-amber-300">&lt;iframe&gt;</code> 代码里的 <code className="text-amber-300">src="..."</code> 链接</li>
               <li>点击下方「切换到链接模式」，粘贴该链接</li>
             </ol>
           </div>
-          <div className="space-y-2 rounded-xl bg-slate-950/60 border border-amber-900/40 p-3">
+          <div className="space-y-2 rounded-[var(--radius-sm)] bg-zinc-950/60 border border-amber-900/40 p-3">
             <p className="text-[11px] font-bold text-amber-300">方法二：Google 幻灯片 / 云盘直链</p>
-            <p className="text-[11px] text-slate-300 leading-relaxed">
+            <p className="text-[11px] text-zinc-300 leading-relaxed">
               PPT 可用 Google Slides「发布到网上」获取嵌入链接；大型视频建议使用支持直链播放的云盘（如支持公开分享的网盘）获取文件直接地址。
             </p>
           </div>
@@ -205,13 +205,13 @@ function UploadForm({ classCode, onAdd, onClose, onSwitchToLink }: { classCode: 
         <div className="flex gap-2">
           <button
             onClick={() => { setSizeError(false); setFile(null) }}
-            className="flex-1 py-2 rounded-xl border border-slate-800 text-slate-400 hover:text-slate-200 hover:bg-slate-900 smooth-transition text-xs font-semibold"
+            className="flex-1 py-2 rounded-[var(--radius-sm)] border border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900 smooth-transition text-xs font-semibold"
           >
             重新选择文件
           </button>
           <button
             onClick={onSwitchToLink}
-            className="flex-1 py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-white smooth-transition text-xs font-semibold"
+            className="flex-1 py-2 rounded-[var(--radius-sm)] bg-amber-600 hover:bg-amber-500 text-white smooth-transition text-xs font-semibold"
           >
             切换到链接模式
           </button>
@@ -222,8 +222,8 @@ function UploadForm({ classCode, onAdd, onClose, onSwitchToLink }: { classCode: 
 
   if (status === 'done') {
     return (
-      <div className="flex flex-col items-center justify-center py-6 px-2 text-emerald-400 gap-2">
-        <CheckCircle2 size={32} className="shrink-0 animate-bounce" />
+      <div className="flex flex-col items-center justify-center py-6 px-2 text-orange-400 gap-2">
+        <CheckCircle2 size={32} className="shrink-0" />
         <span className="text-sm font-medium">{statusMsg}</span>
       </div>
     )
@@ -232,20 +232,20 @@ function UploadForm({ classCode, onAdd, onClose, onSwitchToLink }: { classCode: 
   if (status === 'uploading') {
     return (
       <div className="space-y-3.5 py-4 px-2">
-        <div className="flex items-center justify-between text-slate-300 text-xs">
+        <div className="flex items-center justify-between text-zinc-300 text-xs">
           <div className="flex items-center gap-2">
-            <svg className="animate-spin shrink-0 h-4 w-4 text-emerald-400" fill="none" viewBox="0 0 24 24">
+            <svg className="animate-spin shrink-0 h-4 w-4 text-orange-400" fill="none" viewBox="0 0 24 24">
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
             </svg>
             <span className="truncate max-w-[240px] font-medium">正在上传 {file?.name}</span>
           </div>
-          <span className="font-mono text-[11px] font-bold text-emerald-400 bg-emerald-950/50 px-2 py-0.5 rounded">
+          <span className="font-mono text-[11px] font-bold text-orange-400 bg-orange-950/50 px-2 py-0.5 rounded-[var(--radius-sm)]">
             {progress}%
           </span>
         </div>
-        <div className="h-2 rounded-full bg-slate-950 overflow-hidden border border-slate-900 p-[1px]">
-          <div className="h-full bg-gradient-to-r from-emerald-500 to-blue-500 rounded-full transition-all duration-200" style={{ width: `${progress}%` }} />
+        <div className="h-2 rounded-[var(--radius-sm)] bg-zinc-950 overflow-hidden border border-zinc-900 p-[1px]">
+          <div className="h-full bg-orange-500 rounded-[var(--radius-sm)] transition-all duration-200" style={{ width: `${progress}%` }} />
         </div>
       </div>
     )
@@ -254,32 +254,32 @@ function UploadForm({ classCode, onAdd, onClose, onSwitchToLink }: { classCode: 
   if (file) {
     return (
       <div className="space-y-3.5 mt-2">
-        <div className="flex items-center gap-3 rounded-2xl bg-slate-950/80 border border-slate-800 px-4 py-3">
+        <div className="flex items-center gap-3 rounded-[var(--radius-md)] bg-zinc-950/80 border border-zinc-800 px-4 py-3">
           {file.name.toLowerCase().endsWith('.pdf')
             ? <FileText size={18} className="text-rose-400 shrink-0" />
             : /\.(mp4|webm|mov)$/i.test(file.name)
               ? <Video size={18} className="text-blue-400 shrink-0" />
               : <Presentation size={18} className="text-amber-550 shrink-0" />}
           <div className="flex-1 min-w-0">
-            <p className="text-xs font-semibold text-slate-200 truncate leading-snug">{file.name}</p>
-            <p className="text-[10px] text-slate-500 font-mono mt-0.5">{fmtSize(file.size)}</p>
+            <p className="text-xs font-semibold text-zinc-200 truncate leading-snug">{file.name}</p>
+            <p className="text-[10px] text-zinc-500 font-mono mt-0.5">{fmtSize(file.size)}</p>
           </div>
           <button 
             onClick={() => setFile(null)} 
-            className="p-1 rounded-lg text-slate-500 hover:text-slate-300 hover:bg-slate-900 smooth-transition"
+            className="p-1 rounded-[var(--radius-sm)] text-zinc-500 hover:text-zinc-300 hover:bg-zinc-900 smooth-transition"
             aria-label="Remove selection"
           >
             <XCircle size={16} />
           </button>
         </div>
         {status === 'error' && (
-          <p className="text-xs text-rose-400 bg-rose-950/20 py-1.5 px-3 rounded-lg border border-rose-900/30">
+          <p className="text-xs text-rose-400 bg-rose-950/20 py-1.5 px-3 rounded-[var(--radius-sm)] border border-rose-900/30">
             {statusMsg}
           </p>
         )}
         <button
           onClick={handleUpload}
-          className="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold active:scale-[0.98] transition-all duration-200"
+          className="w-full py-2.5 rounded-[var(--radius-sm)] bg-orange-600 hover:bg-orange-500 text-white font-semibold active:scale-[0.98] transition-all duration-200"
         >
           开始上传
         </button>
@@ -295,22 +295,22 @@ function UploadForm({ classCode, onAdd, onClose, onSwitchToLink }: { classCode: 
         onDragOver={e => { e.preventDefault(); setDragOver(true) }}
         onDragLeave={() => setDragOver(false)}
         onDrop={onDrop}
-        className={`flex flex-col items-center gap-2.5 py-8 rounded-2xl border-2 border-dashed cursor-pointer smooth-transition ${
+        className={`flex flex-col items-center gap-2.5 py-8 rounded-[var(--radius-md)] border-2 border-dashed cursor-pointer smooth-transition ${
           dragOver 
-            ? 'border-emerald-500 bg-emerald-950/20 scale-[0.99]' 
-            : 'border-slate-800 hover:border-slate-700 hover:bg-slate-900/40'
+            ? 'border-orange-500 bg-orange-950/20 scale-[0.99]' 
+            : 'border-zinc-800 hover:border-zinc-700 hover:bg-zinc-900/40'
         }`}
       >
-        <div className="w-12 h-12 rounded-full bg-slate-900 border border-slate-800 flex items-center justify-center text-slate-400">
+        <div className="w-12 h-12 rounded-[var(--radius-sm)] bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-400">
           <UploadCloud size={22} className="smooth-transition" />
         </div>
         <div className="text-center space-y-1">
-          <p className="text-xs font-semibold text-slate-300">点击或拖拽文件到这里</p>
-          <p className="text-[10px] text-slate-500">支持 PDF、PPT(X) 及视频 (MP4/WebM) · 最大 {MAX_UPLOAD_MB} MB</p>
+          <p className="text-xs font-semibold text-zinc-300">点击或拖拽文件到这里</p>
+          <p className="text-[10px] text-zinc-500">支持 PDF、PPT(X) 及视频 (MP4/WebM) · 最大 {MAX_UPLOAD_MB} MB</p>
         </div>
       </div>
       {status === 'error' && (
-        <p className="text-xs text-rose-400 bg-rose-950/20 py-1.5 px-3 rounded-lg border border-rose-900/30">
+        <p className="text-xs text-rose-400 bg-rose-950/20 py-1.5 px-3 rounded-[var(--radius-sm)] border border-rose-900/30">
           {statusMsg}
         </p>
       )}
@@ -362,7 +362,7 @@ function LibraryPanel({ classCode, onAdd, onRefresh }: { classCode: string; onAd
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-6 text-slate-500 text-xs gap-2">
+      <div className="flex items-center justify-center py-6 text-zinc-500 text-xs gap-2">
         <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
           <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
           <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
@@ -377,29 +377,29 @@ function LibraryPanel({ classCode, onAdd, onRefresh }: { classCode: string; onAd
   return (
     <div className="space-y-4 mt-2">
       {error && (
-        <p className="text-xs text-rose-400 bg-rose-950/20 py-1.5 px-3 rounded-lg border border-rose-900/30">
+        <p className="text-xs text-rose-400 bg-rose-950/20 py-1.5 px-3 rounded-[var(--radius-sm)] border border-rose-900/30">
           {error}
         </p>
       )}
       
       {isEmpty && (
-        <p className="text-xs text-slate-500 italic text-center py-4">共享库中没有可用文件。</p>
+        <p className="text-xs text-zinc-500 italic text-center py-4">共享库中没有可用文件。</p>
       )}
 
       {hidden.length > 0 && (
         <div className="space-y-2">
-          <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider px-1">最近隐藏文件</p>
+          <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider px-1">最近隐藏文件</p>
           <ul className="space-y-1">
             {hidden.map(link => (
-              <li key={link.id} className="flex items-center justify-between p-2.5 rounded-xl bg-slate-950 border border-slate-900">
+              <li key={link.id} className="flex items-center justify-between p-2.5 rounded-[var(--radius-sm)] bg-zinc-950 border border-zinc-900">
                 <div className="flex items-center gap-2 min-w-0">
                   <LinkIcon kind={link.kind} />
-                  <span className="text-xs text-slate-200 truncate max-w-[260px] font-medium">{link.title}</span>
+                  <span className="text-xs text-zinc-200 truncate max-w-[260px] font-medium">{link.title}</span>
                 </div>
                 <button
                   onClick={() => handleRestore(link)}
                   disabled={busy === link.id}
-                  className="p-1.5 rounded-lg text-slate-500 hover:text-emerald-400 hover:bg-slate-900 disabled:opacity-30 smooth-transition"
+                  className="p-1.5 rounded-[var(--radius-sm)] text-zinc-500 hover:text-orange-400 hover:bg-zinc-900 disabled:opacity-30 smooth-transition"
                   title="恢复到本班级"
                 >
                   <RotateCcw size={13} />
@@ -412,18 +412,18 @@ function LibraryPanel({ classCode, onAdd, onRefresh }: { classCode: string; onAd
 
       {library.length > 0 && (
         <div className="space-y-2">
-          <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider px-1">其他班级共享</p>
+          <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider px-1">其他班级共享</p>
           <ul className="space-y-1">
             {library.map(link => (
-              <li key={link.id} className="flex items-center justify-between p-2.5 rounded-xl bg-slate-950 border border-slate-900">
+              <li key={link.id} className="flex items-center justify-between p-2.5 rounded-[var(--radius-sm)] bg-zinc-950 border border-zinc-900">
                 <div className="flex items-center gap-2 min-w-0">
                   <LinkIcon kind={link.kind} />
-                  <span className="text-xs text-slate-200 truncate max-w-[260px] font-medium">{link.title}</span>
+                  <span className="text-xs text-zinc-200 truncate max-w-[260px] font-medium">{link.title}</span>
                 </div>
                 <button
                   onClick={() => handleAddFromLibrary(link)}
                   disabled={busy === link.id}
-                  className="p-1.5 rounded-lg text-slate-500 hover:text-sky-400 hover:bg-slate-900 disabled:opacity-30 smooth-transition"
+                  className="p-1.5 rounded-[var(--radius-sm)] text-zinc-500 hover:text-sky-400 hover:bg-zinc-900 disabled:opacity-30 smooth-transition"
                   title="添加到本班级"
                 >
                   <Plus size={13} />
@@ -452,13 +452,13 @@ export function AddDocPanel({ classCode, onAdd, onClose, onRefresh }: AddDocPane
   return (
     <div className="space-y-4">
       {/* Premium Tab Switcher */}
-      <div className="flex rounded-xl bg-slate-950 p-1 border border-slate-900">
+      <div className="flex rounded-[var(--radius-sm)] bg-zinc-950 p-1 border border-zinc-900">
         <button
           onClick={() => setMode('link')}
-          className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold transition-all duration-200 ${
+          className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-[var(--radius-sm)] text-xs font-semibold transition-all duration-200 ${
             mode === 'link' 
-              ? 'bg-slate-800 text-white shadow-sm' 
-              : 'text-slate-500 hover:text-slate-300'
+              ? 'bg-zinc-800 text-white shadow-sm' 
+              : 'text-zinc-500 hover:text-zinc-300'
           }`}
         >
           <Link2 size={13} />
@@ -466,10 +466,10 @@ export function AddDocPanel({ classCode, onAdd, onClose, onRefresh }: AddDocPane
         </button>
         <button
           onClick={() => setMode('upload')}
-          className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold transition-all duration-200 ${
+          className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-[var(--radius-sm)] text-xs font-semibold transition-all duration-200 ${
             mode === 'upload' 
-              ? 'bg-slate-800 text-white shadow-sm' 
-              : 'text-slate-500 hover:text-slate-300'
+              ? 'bg-zinc-800 text-white shadow-sm' 
+              : 'text-zinc-500 hover:text-zinc-300'
           }`}
         >
           <UploadCloud size={13} />
@@ -477,10 +477,10 @@ export function AddDocPanel({ classCode, onAdd, onClose, onRefresh }: AddDocPane
         </button>
         <button
           onClick={() => setMode('library')}
-          className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold transition-all duration-200 ${
+          className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-[var(--radius-sm)] text-xs font-semibold transition-all duration-200 ${
             mode === 'library' 
-              ? 'bg-slate-800 text-white shadow-sm' 
-              : 'text-slate-500 hover:text-slate-300'
+              ? 'bg-zinc-800 text-white shadow-sm' 
+              : 'text-zinc-500 hover:text-zinc-300'
           }`}
         >
           <History size={13} />

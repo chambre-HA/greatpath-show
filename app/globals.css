@@ -1,10 +1,18 @@
 @import 'tailwindcss';
 
 :root {
-  --background: #030712; /* Darker slate-950 by default */
-  --foreground: #f3f4f6;
-  --card-bg: rgba(17, 24, 39, 0.7);
+  --background: #131316; /* Deep ink slate */
+  --foreground: #f4f4f5;
+  --card-bg: rgba(30, 30, 33, 0.7);
   --border-glow: rgba(255, 255, 255, 0.05);
+  --accent: #f97316; /* Orange accent — the one accent, used sparingly */
+
+  /* 无我/无相: rectilinear shape language, not soft/pill corners. */
+  --radius-sm: 2px;
+  --radius-md: 4px;
+
+  /* One hairline rule color for every section/header divider. */
+  --hairline: #27272a; /* zinc-800 */
 }
 
 body {
@@ -12,6 +20,12 @@ body {
   color: var(--foreground);
   font-family: 'Outfit', 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   overflow-x: hidden;
+}
+
+/* Editorial serif for recited/quoted/long-form text (定课 chant lines, 回向
+   phrases, host script quotes) — interface chrome stays sans throughout. */
+.font-editorial {
+  font-family: 'Noto Serif SC', 'Songti SC', serif;
 }
 
 /* Custom premium scrollbar */
@@ -33,61 +47,12 @@ body {
   background: rgba(156, 163, 175, 0.45);
 }
 
-/* Premium radial background glow */
+/* Ink-slate background — flat, no color wash. The old radial blue/purple
+   glow read as generic SaaS-premium; this world stays matte and quiet. */
 .premium-glow-bg {
   position: relative;
-  background-color: #030712;
+  background-color: #131316;
   overflow-x: hidden;
-}
-
-.premium-glow-bg::before {
-  content: '';
-  position: absolute;
-  top: -20%;
-  left: -20%;
-  width: 140%;
-  height: 140%;
-  background: radial-gradient(
-    circle at 50% 30%,
-    rgba(59, 130, 246, 0.08) 0%,
-    rgba(147, 51, 234, 0.05) 30%,
-    rgba(0, 0, 0, 0) 70%
-  );
-  pointer-events: none;
-  z-index: 0;
-}
-
-/* Glassmorphism panel */
-.glass-panel {
-  background: rgba(17, 24, 39, 0.75);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-}
-
-.glass-panel-hover {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-.glass-panel-hover:hover {
-  background: rgba(17, 24, 39, 0.85);
-  border-color: rgba(255, 255, 255, 0.12);
-  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5), 0 0 1px 1px rgba(255, 255, 255, 0.05) inset;
-}
-
-/* Breathing & Pulsing Keyframes */
-@keyframes breathing-glow {
-  0%, 100% {
-    box-shadow: 0 0 15px 2px rgba(99, 102, 241, 0.15);
-    border-color: rgba(99, 102, 241, 0.3);
-  }
-  50% {
-    box-shadow: 0 0 25px 6px rgba(99, 102, 241, 0.25);
-    border-color: rgba(99, 102, 241, 0.5);
-  }
-}
-
-.animate-glow-pulse {
-  animation: breathing-glow 3s ease-in-out infinite;
 }
 
 /* Soft transition properties */
@@ -132,7 +97,7 @@ body {
   right: 0;
   height: 100%;
   width: 40px;
-  background: linear-gradient(to right, rgba(3, 7, 18, 0), rgba(3, 7, 18, 0.95));
+  background: linear-gradient(to right, rgba(19, 19, 22, 0), rgba(19, 19, 22, 0.95));
   pointer-events: none;
   z-index: 10;
 }

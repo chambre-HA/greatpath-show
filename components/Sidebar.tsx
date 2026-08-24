@@ -8,12 +8,12 @@ import type { ClassSignin } from '@/types'
 
 export type ClassFunction = 'dingke' | 'presentation' | 'dedication' | 'messages' | 'activities' | 'signin'
 
-const FUNCTIONS: { value: ClassFunction; label: string; icon: typeof Presentation; iconBg: string; iconColor: string }[] = [
-  { value: 'dingke', label: '手机版定课', icon: Flower2, iconBg: 'bg-emerald-950/40 border-emerald-900/30', iconColor: 'text-emerald-400' },
-  { value: 'presentation', label: '演示文稿', icon: Presentation, iconBg: 'bg-amber-950/40 border-amber-900/30', iconColor: 'text-amber-500' },
-  { value: 'activities', label: '活动展示', icon: Sparkles, iconBg: 'bg-violet-950/40 border-violet-900/30', iconColor: 'text-violet-400' },
-  { value: 'dedication', label: '回向名单', icon: HeartHandshake, iconBg: 'bg-pink-950/40 border-pink-900/30', iconColor: 'text-pink-400' },
-  { value: 'messages', label: '消息模板', icon: MessageSquare, iconBg: 'bg-teal-950/40 border-teal-900/30', iconColor: 'text-teal-400' },
+const FUNCTIONS: { value: ClassFunction; label: string; icon: typeof Presentation }[] = [
+  { value: 'dingke', label: '手机版定课', icon: Flower2 },
+  { value: 'presentation', label: '演示文稿', icon: Presentation },
+  { value: 'activities', label: '活动展示', icon: Sparkles },
+  { value: 'dedication', label: '回向名单', icon: HeartHandshake },
+  { value: 'messages', label: '消息模板', icon: MessageSquare },
 ]
 
 interface SidebarProps {
@@ -29,22 +29,22 @@ export function Sidebar({ className, activeFunction, isOpen, signin, onSelectFun
   const [qrCollapsed, setQrCollapsed] = useState(false)
 
   return (
-    <aside className={`w-72 shrink-0 h-screen flex flex-col bg-gray-950 border-r border-gray-800/80 fixed [@media(min-width:768px)_and_(min-height:640px)]:relative z-45 transition-transform duration-300 ${
+    <aside className={`w-72 shrink-0 h-screen flex flex-col bg-zinc-950 border-r border-zinc-800/80 fixed [@media(min-width:768px)_and_(min-height:640px)]:relative z-45 transition-transform duration-300 ${
       isOpen ? 'translate-x-0' : '-translate-x-full [@media(min-width:768px)_and_(min-height:640px)]:translate-x-0'
     }`}>
       {/* Header */}
-      <div className="p-4 border-b border-gray-800/60 shrink-0 bg-gray-950/40">
+      <div className="p-4 border-b border-zinc-800 shrink-0 bg-zinc-950/40">
         <div className="flex items-center gap-3">
           <button
             onClick={onBack}
-            className="p-2 rounded-xl text-gray-400 hover:text-gray-200 hover:bg-gray-900 border border-transparent hover:border-gray-800/50 smooth-transition"
+            className="p-2 rounded-[var(--radius-sm)] text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900 border border-transparent hover:border-zinc-800/50 smooth-transition"
             aria-label="返回"
           >
             <ArrowLeft size={16} />
           </button>
           <div className="flex-1 min-w-0">
             <h1 className="text-base font-extrabold text-white tracking-tight leading-tight">大道大商 . 共修平台</h1>
-            <p className="text-[11px] text-gray-500 font-medium truncate mt-0.5">{className}</p>
+            <p className="text-[11px] text-zinc-500 font-medium truncate mt-0.5">{className}</p>
           </div>
         </div>
       </div>
@@ -55,7 +55,7 @@ export function Sidebar({ className, activeFunction, isOpen, signin, onSelectFun
           but the first off screen, and the sidebar is the only way to reach
           them. */}
       <nav className="shrink-0 px-3 py-4 space-y-1.5">
-        <p className="px-3 text-[10px] uppercase font-bold tracking-wider text-slate-500 mb-1">功能导航</p>
+        <p className="px-3 text-[10px] uppercase font-bold tracking-wider text-zinc-500 mb-1">功能导航</p>
         {FUNCTIONS.map(fn => {
           const Icon = fn.icon
           const active = fn.value === activeFunction
@@ -63,15 +63,13 @@ export function Sidebar({ className, activeFunction, isOpen, signin, onSelectFun
             <button
               key={fn.value}
               onClick={() => onSelectFunction(fn.value)}
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium smooth-transition border border-transparent ${
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-[var(--radius-sm)] text-sm font-semibold smooth-transition ${
                 active
-                  ? 'bg-emerald-600/15 text-white'
-                  : 'text-slate-300 hover:text-white hover:bg-gray-900/60 hover:border-gray-800/40'
+                  ? 'bg-orange-500/12 text-zinc-50'
+                  : 'text-zinc-400 hover:text-white hover:bg-zinc-900'
               }`}
             >
-              <div className={`w-6 h-6 rounded-lg border flex items-center justify-center shrink-0 ${fn.iconBg}`}>
-                <Icon size={14} className={fn.iconColor} />
-              </div>
+              <Icon size={16} className={`shrink-0 ${active ? 'text-orange-400' : ''}`} />
               <span className="flex-1 text-left">{fn.label}</span>
             </button>
           )
@@ -79,8 +77,8 @@ export function Sidebar({ className, activeFunction, isOpen, signin, onSelectFun
       </nav>
 
       {/* Timer — pinned at bottom */}
-      <div className="flex-1 min-h-0 overflow-y-auto px-4 pt-2 pb-2 border-t border-gray-800/60 bg-gray-950/80">
-        <h2 className="px-3 text-[10px] uppercase font-bold tracking-wider text-slate-500 mb-1">计时器</h2>
+      <div className="flex-1 min-h-0 overflow-y-auto px-4 pt-2 pb-2 border-t border-zinc-800 bg-zinc-950/80">
+        <h2 className="px-3 text-[10px] uppercase font-bold tracking-wider text-zinc-500 mb-1">计时器</h2>
         <CountdownTimer />
       </div>
 
@@ -89,10 +87,10 @@ export function Sidebar({ className, activeFunction, isOpen, signin, onSelectFun
           it opens the enlarged view, where the class also maintains its own
           check-in link. Stays visible with no link yet, so a class can get
           there to add one. */}
-      <div className="px-4 py-3 border-t border-gray-800/60 shrink-0 bg-gray-950/80">
+      <div className="px-4 py-3 border-t border-zinc-800 shrink-0 bg-zinc-950/80">
         <button
           onClick={() => setQrCollapsed(prev => !prev)}
-          className="w-full flex items-center justify-between px-3 text-slate-500 hover:text-slate-300 smooth-transition"
+          className="w-full flex items-center justify-between px-3 text-zinc-500 hover:text-zinc-300 smooth-transition"
           aria-expanded={!qrCollapsed}
         >
           <h2 className="text-[10px] uppercase font-bold tracking-wider">签到二维码</h2>
@@ -102,31 +100,31 @@ export function Sidebar({ className, activeFunction, isOpen, signin, onSelectFun
           signin ? (
             <button
               onClick={() => onSelectFunction('signin')}
-              className="w-full flex items-center gap-3 px-3 py-1.5 mt-1.5 rounded-xl hover:bg-gray-900/60 smooth-transition"
+              className="w-full flex items-center gap-3 px-3 py-1.5 mt-1.5 rounded-[var(--radius-sm)] hover:bg-zinc-900/60 smooth-transition"
               title="点击放大"
             >
               <span className="flex-1 text-left leading-snug min-w-0">
                 {signin.passcode ? (
                   <>
-                    <span className="block text-[10px] uppercase font-bold tracking-wider text-slate-500 truncate">
+                    <span className="block text-[10px] uppercase font-bold tracking-wider text-zinc-500 truncate">
                       {signin.label || '口令'}
                     </span>
-                    <span className="block text-base font-bold text-emerald-300 tracking-[0.15em]">
+                    <span className="block text-base font-bold text-orange-300 tracking-[0.15em]">
                       {signin.passcode}
                     </span>
                   </>
                 ) : (
-                  <span className="block text-[11px] text-slate-400 truncate">{signin.label}</span>
+                  <span className="block text-[11px] text-zinc-400 truncate">{signin.label}</span>
                 )}
               </span>
-              <div className="bg-white p-1.5 rounded-lg shrink-0">
+              <div className="bg-white p-1.5 rounded-[var(--radius-sm)] shrink-0">
                 <QRCodeSVG value={signin.url} size={72} level="M" />
               </div>
             </button>
           ) : (
             <button
               onClick={() => onSelectFunction('signin')}
-              className="w-full flex items-center gap-2 px-3 py-2 mt-1.5 rounded-xl border border-dashed border-gray-800 text-[11px] text-slate-500 hover:text-slate-300 hover:bg-gray-900/60 smooth-transition"
+              className="w-full flex items-center gap-2 px-3 py-2 mt-1.5 rounded-[var(--radius-sm)] border border-dashed border-zinc-800 text-[11px] text-zinc-500 hover:text-zinc-300 hover:bg-zinc-900/60 smooth-transition"
             >
               <QrCode size={13} className="shrink-0" />
               <span className="text-left">尚未设置签到链接，点击添加</span>
