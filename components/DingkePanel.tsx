@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
-  ChevronLeft, ChevronRight, Maximize, Menu, Minimize, Pencil, QrCode, Sparkles, Type,
+  ChevronLeft, ChevronRight, ExternalLink, Maximize, Menu, Minimize, Pencil, QrCode, Sparkles, Type,
 } from 'lucide-react'
 import { QRCodeSVG } from 'qrcode.react'
 import { AudioBar, ScriptBlock, SlidePane } from './DingkeParts'
@@ -292,6 +292,15 @@ export function DingkePanel({ classCode, onToggleSidebar, onShowActivities }: Di
                         {signin.passcode}
                       </p>
                     )}
+                    <a
+                      href={signin.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 mt-2 text-[0.75em] font-bold text-orange-300 underline underline-offset-4 hover:text-orange-200 smooth-transition"
+                    >
+                      <ExternalLink size={12} />
+                      <span>打开签到页</span>
+                    </a>
                   </div>
                 </div>
               )}
