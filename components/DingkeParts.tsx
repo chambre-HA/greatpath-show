@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Pause, Play, RotateCcw, Volume1, Volume2, VolumeX } from 'lucide-react'
-import type { DedicationGroup, DingkeAudio, DingkeBlock, DingkeSlide } from '@/types'
+import type { DedicationGroup, DingkeAudio, DingkeBlock, DingkeSlide, DingkeVideo } from '@/types'
 
 /**
  * Palette lifted from the 定课 deck itself, so the shared screen still looks
@@ -57,8 +57,8 @@ function toRow(line: string): SlideRow {
  * scroll container stay put, so the shared screen doesn't flash.
  */
 export function SlidePane({
-  slide, zoom, sectionId, direction,
-}: { slide: DingkeSlide; zoom: number; sectionId: string; direction: 1 | -1 }) {
+  slide, zoom, sectionId, direction, video,
+}: { slide: DingkeSlide; zoom: number; sectionId: string; direction: 1 | -1; video?: DingkeVideo }) {
   const size = (rem: number, vh: number) => `min(${rem * zoom}rem, ${vh}vh)`
 
   const rows: SlideRow[] = [
@@ -71,7 +71,7 @@ export function SlidePane({
       className="flex-1 min-w-0 min-h-0 overflow-y-auto"
       style={{ background: `linear-gradient(160deg, ${DECK_SLATE} 0%, ${DECK_SLATE_DEEP} 100%)` }}
     >
-      <div className="min-h-full flex flex-col items-center justify-center px-6 py-4 text-center">
+      <div className="min-h-full flex flex-col items-center justify-center px-6 py-4 text-center gap-4">
         <div
           key={sectionId}
           className={`w-full max-w-3xl ${direction > 0 ? 'dingke-enter-fwd' : 'dingke-enter-back'}`}
@@ -118,6 +118,16 @@ export function SlidePane({
             }
           })}
         </div>
+        {video && (
+          <video
+            key={video.src}
+            src={video.src}
+            controls
+            playsInline
+            preload="none"
+            className="w-full max-w-3xl rounded-2xl bg-black/40 shadow-xl"
+          />
+        )}
       </div>
     </div>
   )

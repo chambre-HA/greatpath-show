@@ -38,6 +38,32 @@ function fileIcon(kind: ShowLink['kind'], size = 15) {
   return <Presentation size={size} className="text-amber-500 shrink-0" />
 }
 
+const UNTAGGED_LABEL = '未分类'
+
+/**
+ * Buckets by admin-assigned tag, first-seen order, each doc listed once per
+ * tag it carries (a doc with several tags isn't forced to pick one "true"
+ * category). Untagged docs land in a trailing, unlabeled group so a class
+ * that hasn't tagged anything sees the exact same flat list as before —
+ * headers only appear once tags are actually in use.
+ */
+function groupLinksByTag(links: ShowLink[]): Array<{ tag: string | null; items: ShowLink[] }> {
+  const order: string[] = []
+  const byTag = new Map<string, ShowLink[]>()
+  const untagged: ShowLink[] = []
+  for (const link of links) {
+    if (!link.tags?.length) { untagged.push(link); continue }
+    for (const tag of link.tags) {
+      if (!byTag.has(tag)) { byTag.set(tag, []); order.push(tag) }
+      byTag.get(tag)!.push(link)
+    }
+  }
+  if (order.length === 0) return [{ tag: null, items: links }]
+  const groups = order.map(tag => ({ tag, items: byTag.get(tag)! }))
+  if (untagged.length) groups.push({ tag: UNTAGGED_LABEL, items: untagged })
+  return groups
+}
+
 export function Viewer({ classCode, links, openTabIds, activeTabId, onToggleSidebar, onActivate, onClose, onAdd, onRemove, onRefresh }: ViewerProps) {
   const [filesOpen, setFilesOpen] = useState(false)
   const [adding, setAdding] = useState(false)
@@ -105,34 +131,43 @@ export function Viewer({ classCode, links, openTabIds, activeTabId, onToggleSide
                 {links.length === 0 ? (
                   <p className="px-4 py-6 text-xs text-gray-500 italic text-center">暂无文件，点击右侧「添加文件」。</p>
                 ) : (
-                  links.map(link => {
-                    const active = link.id === activeTabId
-                    const checked = checkedIds.has(link.id)
-                    return (
-                      <div
-                        key={link.id}
-                        onClick={() => toggleChecked(link.id)}
-                        className={`group flex items-center gap-2.5 px-3 py-2 mx-1.5 rounded-lg cursor-pointer smooth-transition ${
-                          checked ? 'bg-emerald-600/15 text-white' : active ? 'text-emerald-400' : 'text-slate-300 hover:bg-gray-900/70 hover:text-white'
-                        }`}
-                      >
-                        <span className={`shrink-0 w-4 h-4 rounded border flex items-center justify-center smooth-transition ${
-                          checked ? 'bg-emerald-600 border-emerald-600' : 'border-gray-700'
-                        }`}>
-                          {checked && <Check size={11} className="text-white" />}
-                        </span>
-                        {fileIcon(link.kind, 14)}
-                        <span className="flex-1 min-w-0 text-xs font-medium truncate">{link.title}</span>
-                        <button
-                          onClick={e => { e.stopPropagation(); onRemove(link.id) }}
-                          className="opacity-0 group-hover:opacity-100 p-1 rounded text-slate-500 hover:text-rose-400 hover:bg-slate-900/80 smooth-transition shrink-0"
-                          aria-label="Remove"
-                        >
-                          <Trash2 size={12} />
-                        </button>
-                      </div>
-                    )
-                  })
+                  groupLinksByTag(links).map(group => (
+                    <div key={group.tag ?? '__untagged'}>
+                      {group.tag && (
+                        <p className="px-4 pt-2.5 pb-1 text-[10px] uppercase font-bold tracking-wider text-slate-600">
+                          {group.tag}
+                        </p>
+                      )}
+                      {group.items.map(link => {
+                        const active = link.id === activeTabId
+                        const checked = checkedIds.has(link.id)
+                        return (
+                          <div
+                            key={link.id}
+                            onClick={() => toggleChecked(link.id)}
+                            className={`group flex items-center gap-2.5 px-3 py-2 mx-1.5 rounded-lg cursor-pointer smooth-transition ${
+                              checked ? 'bg-emerald-600/15 text-white' : active ? 'text-emerald-400' : 'text-slate-300 hover:bg-gray-900/70 hover:text-white'
+                            }`}
+                          >
+                            <span className={`shrink-0 w-4 h-4 rounded border flex items-center justify-center smooth-transition ${
+                              checked ? 'bg-emerald-600 border-emerald-600' : 'border-gray-700'
+                            }`}>
+                              {checked && <Check size={11} className="text-white" />}
+                            </span>
+                            {fileIcon(link.kind, 14)}
+                            <span className="flex-1 min-w-0 text-xs font-medium truncate">{link.title}</span>
+                            <button
+                              onClick={e => { e.stopPropagation(); onRemove(link.id) }}
+                              className="opacity-0 group-hover:opacity-100 p-1 rounded text-slate-500 hover:text-rose-400 hover:bg-slate-900/80 smooth-transition shrink-0"
+                              aria-label="Remove"
+                            >
+                              <Trash2 size={12} />
+                            </button>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  ))
                 )}
               </div>
               {links.length > 0 && (

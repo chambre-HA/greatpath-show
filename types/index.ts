@@ -63,6 +63,8 @@ export interface ClassInfo {
   createdAt: string
   /** 学堂 whose sign-in link this class uses (see School). */
   schoolId?: string
+  /** 定课 script this class runs (see DingkeVariant). Unset = the built-in default script. */
+  dingkeVariantId?: string
 }
 
 /**
@@ -146,6 +148,13 @@ export interface DingkeAudio {
   durationSec: number
 }
 
+/** A longer teaching video a section plays inline, alongside (not instead of) the room's slide. */
+export interface DingkeVideo {
+  src: string
+  label: string
+  durationSec: number
+}
+
 /** A line of the host's script. `dedication` is filled from 回向名单 at render time. */
 export type DingkeBlock =
   | { kind: 'cue'; text: string; label?: string }
@@ -181,6 +190,8 @@ export interface DingkeSection {
   audio?: DingkeAudio
   /** Puts the player above the script — for 开场, where the music leads. */
   audioFirst?: boolean
+  /** A teaching video the room watches together — renders in the slide half, player included. */
+  video?: DingkeVideo
   /** Renders the class's live 回向名单 in place of the `dedication` block. */
   dedication?: boolean
 }
@@ -203,6 +214,21 @@ export interface DingkeSectionOverride {
 }
 
 export type DingkeOverrides = Record<string, DingkeSectionOverride>
+
+/**
+ * A full, independent 定课 script — its own complete section list, not a patch
+ * on top of DEFAULT_DINGKE_SECTIONS. Classes with substantially different flows
+ * (different sections, counts, order) point at one of these via
+ * ClassInfo.dingkeVariantId instead of getting the built-in default. A class
+ * can still layer its own DingkeSectionOverride edits on top of whichever base
+ * (variant or default) it resolves to.
+ */
+export interface DingkeVariant {
+  id: string
+  name: string
+  sections: DingkeSection[]
+  updatedAt: string
+}
 
 export interface OrgActivity {
   id: string
@@ -227,4 +253,6 @@ export interface ShowLink {
   size?: number
   r2Key?: string
   hidden?: boolean
+  /** Admin-assigned categories. A doc with none shows under 未分类 wherever tags are grouped. */
+  tags?: string[]
 }

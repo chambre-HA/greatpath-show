@@ -1,4 +1,3 @@
-import { DEFAULT_DINGKE_SECTIONS } from './dingke-content'
 import type { DingkeBlock, DingkeOverrides, DingkeSection, DingkeSectionOverride } from '@/types'
 
 /** Paragraphs opening with one of these read as 主持人白 cues rather than body text. */
@@ -54,6 +53,11 @@ export function applyOverride(section: DingkeSection, override?: DingkeSectionOv
   }
 }
 
-export function resolveSections(overrides: DingkeOverrides): DingkeSection[] {
-  return DEFAULT_DINGKE_SECTIONS.map(section => applyOverride(section, overrides[section.id]))
+/**
+ * `baseSections` is whatever the class actually runs — a DingkeVariant's own
+ * section list, or DEFAULT_DINGKE_SECTIONS when the class has none assigned.
+ * The class's own per-section overrides (DingkeOverrides) layer on top either way.
+ */
+export function resolveSections(baseSections: DingkeSection[], overrides: DingkeOverrides): DingkeSection[] {
+  return baseSections.map(section => applyOverride(section, overrides[section.id]))
 }

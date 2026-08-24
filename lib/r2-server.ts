@@ -5,12 +5,13 @@ import {
   PutObjectCommand,
   S3Client,
 } from '@aws-sdk/client-s3'
-import type { ClassInfo, ClassSignin, ClassSigninOverride, DedicationGroup, DedicationPerson, DingkeOverrides, DingkeSectionOverride, MessageTemplate, School, ShowLink } from '@/types'
-import { getDefaultSection } from './dingke-content'
+import type { ClassInfo, ClassSignin, ClassSigninOverride, DedicationGroup, DedicationPerson, DingkeOverrides, DingkeSection, DingkeSectionOverride, DingkeVariant, MessageTemplate, School, ShowLink } from '@/types'
+import { DEFAULT_DINGKE_SECTIONS } from './dingke-content'
 import { blocksToBody } from './dingke-resolve'
 
 const CLASSES_KEY = '_classes.json'
 const SCHOOLS_KEY = '_schools.json'
+const DINGKE_VARIANTS_KEY = '_dingke-variants.json'
 const SIGNIN_KEY = 'signin.json'
 const INDEX_KEY = 'links.json'
 const MESSAGES_KEY = 'messages.json'
@@ -78,6 +79,8 @@ function mergeLink(base: ShowLink, stored?: ShowLink): ShowLink {
     title: stored.title || base.title,
     url: stored.url || base.url,
     order: stored.order,
+    tags: stored.tags,
+    hidden: stored.hidden,
   }
 }
 
@@ -146,6 +149,7 @@ function normalizeClassInfo(info: Pick<ClassInfo, 'code'> & Partial<ClassInfo>):
     name: normalizeClassName(info.name, code),
     createdAt: info.createdAt ?? new Date().toISOString(),
     schoolId: info.schoolId?.trim() || undefined,
+    dingkeVariantId: info.dingkeVariantId?.trim() || undefined,
   }
 }
 
@@ -189,9 +193,10 @@ export async function updateClass(info: ClassInfo): Promise<void> {
   classes[index] = {
     ...classes[index],
     name: next.name,
-    // `schoolId: undefined` on the way in means "unassign", so this is a
-    // straight overwrite rather than a merge.
+    // `schoolId`/`dingkeVariantId: undefined` on the way in means "unassign",
+    // so this is a straight overwrite rather than a merge.
     schoolId: next.schoolId,
+    dingkeVariantId: next.dingkeVariantId,
   }
   await putJson(client, CLASSES_KEY, classes)
 }
@@ -249,6 +254,79 @@ export async function deleteSchool(id: string): Promise<void> {
       classes.map(c => (c.schoolId === id ? { ...c, schoolId: undefined } : c)),
     )
   }
+}
+
+// ── 定课 script variants ────────────────────────────────────────────────────
+// A variant is a full independent section list (not a patch on top of the
+// default script), for classes whose flow genuinely differs — different
+// sections, counts, or order — rather than just different wording on the same
+// ten. Classes point at one via ClassInfo.dingkeVariantId; a class's own
+// DingkeOverrides still layer on top of whichever base (variant or default)
+// it resolves to.
+
+function normalizeDingkeVariant(
+  variant: Partial<DingkeVariant> & Pick<DingkeVariant, 'name' | 'sections'>,
+): DingkeVariant {
+  return {
+    id: variant.id?.trim() || crypto.randomUUID(),
+    name: variant.name.trim(),
+    sections: variant.sections,
+    updatedAt: new Date().toISOString(),
+  }
+}
+
+export async function listDingkeVariants(): Promise<DingkeVariant[]> {
+  const client = getClient()
+  const variants = await getJson<DingkeVariant[]>(client, DINGKE_VARIANTS_KEY, [])
+  return variants.filter(v => v && v.id).sort((a, b) => a.name.localeCompare(b.name, 'zh'))
+}
+
+/** Creates the variant when `id` is absent or unknown, otherwise overwrites it. */
+export async function saveDingkeVariant(
+  variant: Partial<DingkeVariant> & Pick<DingkeVariant, 'name' | 'sections'>,
+): Promise<DingkeVariant> {
+  const next = normalizeDingkeVariant(variant)
+  if (!next.name) throw new Error('版本名称不能为空')
+  if (!next.sections?.length) throw new Error('至少需要一个环节')
+  if (next.sections.some(s => !s.id?.trim())) throw new Error('每个环节都需要 id')
+  const ids = next.sections.map(s => s.id)
+  if (new Set(ids).size !== ids.length) throw new Error('环节 id 不能重复')
+
+  const client = getClient()
+  const variants = await listDingkeVariants()
+  const index = variants.findIndex(v => v.id === next.id)
+  if (index < 0) variants.push(next)
+  else variants[index] = next
+  await putJson(client, DINGKE_VARIANTS_KEY, variants)
+  return next
+}
+
+/** Also unassigns the variant from any class pointing at it (falls back to the default script). */
+export async function deleteDingkeVariant(id: string): Promise<void> {
+  const client = getClient()
+  const variants = await listDingkeVariants()
+  await putJson(client, DINGKE_VARIANTS_KEY, variants.filter(v => v.id !== id))
+
+  const classes = await listClasses()
+  if (classes.some(c => c.dingkeVariantId === id)) {
+    await putJson(
+      client,
+      CLASSES_KEY,
+      classes.map(c => (c.dingkeVariantId === id ? { ...c, dingkeVariantId: undefined } : c)),
+    )
+  }
+}
+
+/** What a class actually runs before its own per-section overrides are applied. */
+export async function getBaseDingkeSections(classCode: string): Promise<DingkeSection[]> {
+  const classes = await listClasses()
+  const cls = classes.find(c => c.code === classCode)
+  if (cls?.dingkeVariantId) {
+    const variants = await listDingkeVariants()
+    const variant = variants.find(v => v.id === cls.dingkeVariantId)
+    if (variant) return variant.sections
+  }
+  return DEFAULT_DINGKE_SECTIONS
 }
 
 // ── Per-class sign-in link ─────────────────────────────────────────────────
@@ -395,6 +473,27 @@ export async function listHiddenLinks(classCode: string): Promise<ShowLink[]> {
   })
 }
 
+/**
+ * Same merge as listAllLinks, but keeps hidden entries (with their `hidden`
+ * flag) instead of filtering them out — for the admin's global 共享库 view,
+ * which is meant to stay a complete inventory of every file any class has
+ * ever added, including ones a class has since hidden from its own picker.
+ * Hiding a file is a per-class visibility toggle, not a deletion, so it
+ * should not make the file disappear from cross-class admin housekeeping.
+ */
+async function listAllLinksIncludingHidden(classCode: string): Promise<ShowLink[]> {
+  const client = getClient()
+  const [files, index] = await Promise.all([
+    listBucketFiles(client, classCode),
+    getStoredLinks(client, classCode),
+  ])
+  const indexed = new Map(index.map(link => [link.id, link]))
+  const mergedFiles = files.map(file => mergeLink(file, indexed.get(file.id)))
+  const fileIds = new Set(files.map(f => f.id))
+  const extras = index.filter(l => !fileIds.has(l.id))
+  return [...extras, ...mergedFiles].sort(sortLinks)
+}
+
 export async function listGlobalLibrary(forClassCode: string): Promise<ShowLink[]> {
   const client = getClient()
   const [classes, activeLinks] = await Promise.all([
@@ -421,13 +520,15 @@ export interface LibraryOwner {
   code: string
   name: string
   id: string
+  /** Whether this owning class currently has the file hidden from its own picker. */
+  hidden?: boolean
 }
 
 export async function listAllLibraryLinks(): Promise<(ShowLink & { owners: LibraryOwner[] })[]> {
   const classes = await listClasses()
   const perClass = await Promise.all(
     classes.map(async cls => {
-      const links = await listAllLinks(cls.code)
+      const links = await listAllLinksIncludingHidden(cls.code)
       return links.map(link => ({ link, ownerCode: cls.code, ownerName: cls.name }))
     })
   )
@@ -435,9 +536,12 @@ export async function listAllLibraryLinks(): Promise<(ShowLink & { owners: Libra
   const groups = new Map<string, { link: ShowLink; owners: LibraryOwner[] }>()
   for (const { link, ownerCode, ownerName } of perClass.flat()) {
     const key = link.url
-    const owner: LibraryOwner = { code: ownerCode, name: ownerName, id: link.id }
+    const owner: LibraryOwner = { code: ownerCode, name: ownerName, id: link.id, hidden: link.hidden || undefined }
     const existing = groups.get(key)
     if (existing) {
+      // Prefer an owner's active copy as the representative link (title/kind/etc.)
+      // when the same url is both active in one class and hidden in another.
+      if (existing.link.hidden && !link.hidden) existing.link = link
       existing.owners.push(owner)
     } else {
       groups.set(key, { link, owners: [owner] })
@@ -472,15 +576,36 @@ export async function updateLink(classCode: string, link: ShowLink): Promise<voi
   await putJson(client, classIndexKey(classCode), compactLinkOrder(items))
 }
 
+/**
+ * Patches `order` onto the stored index for exactly the ids given, leaving
+ * every other stored entry — crucially, hidden ones — untouched. `ids` is
+ * ordinarily the class's whole current active list, but this must not
+ * rebuild the index from listAllLinks(): that view already excludes hidden
+ * links, so writing it back wholesale would silently erase every hidden
+ * entry's `hidden` flag (or drop it outright) on the next reorder.
+ */
 export async function reorderLinks(classCode: string, ids: string[]): Promise<void> {
   const client = getClient()
-  const links = await listAllLinks(classCode)
-  const byId = new Map(links.map(link => [link.id, link]))
-  const orderedIds = ids.filter(id => byId.has(id))
-  for (const link of links) {
-    if (!orderedIds.includes(link.id)) orderedIds.push(link.id)
-  }
-  const next = orderedIds.map((id, index) => ({ ...byId.get(id)!, order: index + 1 }))
+  const [stored, files] = await Promise.all([
+    getStoredLinks(client, classCode),
+    listBucketFiles(client, classCode),
+  ])
+  const filesById = new Map(files.map(f => [f.id, f]))
+
+  const next = [...stored]
+  ids.forEach((id, index) => {
+    const order = index + 1
+    const existingIndex = next.findIndex(l => l.id === id)
+    if (existingIndex >= 0) {
+      next[existingIndex] = { ...next[existingIndex], order }
+    } else {
+      // A bare r2 bucket file with no stored metadata yet — add a minimal
+      // entry just to carry its new order.
+      const file = filesById.get(id)
+      if (file) next.push({ ...file, order })
+    }
+  })
+
   await putJson(client, classIndexKey(classCode), next)
 }
 
@@ -661,8 +786,9 @@ export async function setDedicationPersonPaused(classCode: string, groupId: stri
 
 // ── 定课 script overrides ───────────────────────────────────────────────────
 // Only the fields a class actually edited are stored; everything else keeps
-// falling through to DEFAULT_DINGKE_SECTIONS, so central script updates still
-// reach classes that tweaked one section.
+// falling through to whatever the class's base script is (its assigned
+// variant, or DEFAULT_DINGKE_SECTIONS), so central/variant script updates
+// still reach classes that tweaked one section.
 
 function dingkeKey(classCode: string) {
   return `${classCode}/${DINGKE_KEY}`
@@ -673,14 +799,15 @@ export async function getDingkeOverrides(classCode: string): Promise<DingkeOverr
   return getJson<DingkeOverrides>(client, dingkeKey(classCode), {})
 }
 
+/** `base` is the section from whatever the class's base script resolves to (see getBaseDingkeSections). */
 export async function setDingkeOverride(
   classCode: string,
   sectionId: string,
   patch: Omit<DingkeSectionOverride, 'updatedAt'>,
+  base: DingkeSection | undefined,
 ): Promise<void> {
   const client = getClient()
   const all = await getJson<DingkeOverrides>(client, dingkeKey(classCode), {})
-  const base = getDefaultSection(sectionId)
 
   // Two things are filtered out here. An empty string means "clear this field
   // back to the default" rather than "override with blank" — a blank title
