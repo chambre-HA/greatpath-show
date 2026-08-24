@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { ArrowLeft, ChevronDown, ChevronUp, Flower2, HeartHandshake, MessageSquare, Presentation, QrCode, Sparkles } from 'lucide-react'
+import { ArrowLeft, ChevronDown, ChevronUp, ExternalLink, Flower2, HeartHandshake, MessageSquare, Presentation, QrCode, Sparkles } from 'lucide-react'
 import { QRCodeSVG } from 'qrcode.react'
 import { CountdownTimer } from './CountdownTimer'
 import type { ClassSignin } from '@/types'
@@ -98,29 +98,41 @@ export function Sidebar({ className, activeFunction, isOpen, signin, onSelectFun
         </button>
         {!qrCollapsed && (
           signin ? (
-            <button
-              onClick={() => onSelectFunction('signin')}
-              className="w-full flex items-center gap-3 px-3 py-1.5 mt-1.5 rounded-[var(--radius-sm)] hover:bg-zinc-900/60 smooth-transition"
-              title="点击放大"
-            >
-              <span className="flex-1 text-left leading-snug min-w-0">
-                {signin.passcode ? (
-                  <>
-                    <span className="block text-[10px] uppercase font-bold tracking-wider text-zinc-500 truncate">
-                      {signin.label || '口令'}
-                    </span>
-                    <span className="block text-base font-bold text-orange-300 tracking-[0.15em]">
-                      {signin.passcode}
-                    </span>
-                  </>
-                ) : (
-                  <span className="block text-[11px] text-zinc-400 truncate">{signin.label}</span>
-                )}
-              </span>
-              <div className="bg-white p-1.5 rounded-[var(--radius-sm)] shrink-0">
-                <QRCodeSVG value={signin.url} size={72} level="M" />
-              </div>
-            </button>
+            <div className="mt-1.5 rounded-[var(--radius-sm)] hover:bg-zinc-900/60 smooth-transition">
+              <button
+                onClick={() => onSelectFunction('signin')}
+                className="w-full flex items-center gap-3 px-3 py-1.5"
+                title="点击放大"
+              >
+                <span className="flex-1 text-left leading-snug min-w-0">
+                  {signin.passcode ? (
+                    <>
+                      <span className="block text-[10px] uppercase font-bold tracking-wider text-zinc-500 truncate">
+                        {signin.label || '口令'}
+                      </span>
+                      <span className="block text-base font-bold text-orange-300 tracking-[0.15em]">
+                        {signin.passcode}
+                      </span>
+                    </>
+                  ) : (
+                    <span className="block text-[11px] text-zinc-400 truncate">{signin.label}</span>
+                  )}
+                </span>
+                <div className="bg-white p-1.5 rounded-[var(--radius-sm)] shrink-0">
+                  <QRCodeSVG value={signin.url} size={72} level="M" />
+                </div>
+              </button>
+              <a
+                href={signin.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={e => e.stopPropagation()}
+                className="flex items-center gap-1 px-3 pb-1.5 text-[10px] font-bold text-orange-300 underline underline-offset-4 hover:text-orange-200 smooth-transition"
+              >
+                <ExternalLink size={10} />
+                <span>打开签到页</span>
+              </a>
+            </div>
           ) : (
             <button
               onClick={() => onSelectFunction('signin')}
