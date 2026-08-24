@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { useParams, useRouter } from 'next/navigation'
+import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { Sidebar, type ClassFunction } from '@/components/Sidebar'
 import { Viewer } from '@/components/Viewer'
 import { DedicationPanel } from '@/components/DedicationPanel'
@@ -16,12 +16,17 @@ export default function ClassPage() {
   const params = useParams()
   const classCode = params.code as string
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [links, setLinks] = useState<ShowLink[]>([])
   const [openTabIds, setOpenTabIds] = useState<string[]>([])
   const [activeTabId, setActiveTabId] = useState<string | null>(null)
   const [classInfo, setClassInfo] = useState<ClassInfo | null>(null)
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
-  const [activeFunction, setActiveFunction] = useState<ClassFunction>('presentation')
+  const VALID_FUNCTIONS: ClassFunction[] = ['dingke', 'presentation', 'dedication', 'messages', 'activities', 'signin']
+  const requestedFunction = searchParams.get('fn') as ClassFunction | null
+  const [activeFunction, setActiveFunction] = useState<ClassFunction>(
+    requestedFunction && VALID_FUNCTIONS.includes(requestedFunction) ? requestedFunction : 'presentation'
+  )
   const [signin, setSignin] = useState<ClassSignin | null>(null)
   const initializedRef = useRef(false)
 
