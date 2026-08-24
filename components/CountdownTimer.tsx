@@ -25,12 +25,17 @@ interface TimerRingProps {
   fraction: number
   done: boolean
   low: boolean
-  running: boolean
 }
 
+/**
+ * Ink-neutral by default — white ticks and number, matching the system's
+ * "one accent used sparingly" rule. Orange only enters in the last minute
+ * (elapsed ticks turn accent to read as urgency, not decoration), and red
+ * marks done. The dial itself carries no color of its own.
+ */
 function TimerRing({ fraction, done, low }: TimerRingProps) {
   const brightCount = Math.ceil(fraction * TICK_COUNT)
-  const activeColor = done ? '#f87171' : low ? '#fb923c' : '#f3f4f6'
+  const activeColor = done ? '#f87171' : low ? '#f97316' : '#fafafa'
 
   const r4 = (n: number) => Math.round(n * 10000) / 10000
 
@@ -43,7 +48,7 @@ function TimerRing({ fraction, done, low }: TimerRingProps) {
         const sin = Math.sin(rad)
         const active = i < brightCount
 
-        const strokeColor = active ? activeColor : '#1e293b'
+        const strokeColor = active ? activeColor : '#3f3f46'
 
         return (
           <line
@@ -71,25 +76,25 @@ function playBellChime() {
       const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext
       if (!AudioContextClass) return
       const ctx = new AudioContextClass()
-      
+
       const playTone = (freq: number, start: number, duration: number, volume: number) => {
         const osc = ctx.createOscillator()
         const gainNode = ctx.createGain()
-        
+
         osc.type = 'sine'
         osc.frequency.setValueAtTime(freq, start)
-        
+
         gainNode.gain.setValueAtTime(0, start)
         gainNode.gain.linearRampToValueAtTime(volume, start + 0.04)
         gainNode.gain.exponentialRampToValueAtTime(0.0001, start + duration)
-        
+
         osc.connect(gainNode)
         gainNode.connect(ctx.destination)
-        
+
         osc.start(start)
         osc.stop(start + duration)
       }
-      
+
       const now = ctx.currentTime
       playTone(523.25, now, 2.5, 0.4) // C5
       playTone(659.25, now + 0.08, 2.5, 0.3) // E5
@@ -147,20 +152,20 @@ export function CountdownTimer() {
 
   return (
     <div className="space-y-4">
-      {/* Circular Timer Visual (Static White Theme, No Pulsing) */}
+      {/* Dial — ink-neutral by default, orange enters only in the last minute. */}
       <div className="relative aspect-square w-full max-w-[190px] mx-auto">
-        <TimerRing fraction={fraction} done={isDone} low={isLow} running={running} />
+        <TimerRing fraction={fraction} done={isDone} low={isLow} />
         <div className="absolute inset-0 flex items-center justify-center">
-          <span className={`font-mono font-extralight tabular-nums text-4xl tracking-tight smooth-transition ${
-            isDone ? 'text-rose-400' : isLow ? 'text-orange-400' : 'text-white'
+          <span className={`font-mono font-light tabular-nums text-4xl tracking-tight smooth-transition ${
+            isDone ? 'text-rose-400' : isLow ? 'text-orange-400' : 'text-zinc-50'
           }`}>
             {format(remaining)}
           </span>
         </div>
       </div>
 
-      {/* Custom Duration Slider */}
-      <div className="px-1 py-1 rounded-xl bg-slate-950/40 border border-slate-900/50 p-2">
+      {/* Duration slider */}
+      <div className="px-3 py-2.5 rounded-[var(--radius-sm)] border border-zinc-800 bg-zinc-950/40">
         <input
           type="range"
           min={1}
@@ -170,25 +175,27 @@ export function CountdownTimer() {
             const mins = parseInt(e.target.value) || 5
             setPreset(mins * 60_000)
           }}
-          className="w-full accent-white bg-slate-800 rounded-lg appearance-none h-1 cursor-pointer"
+          className="w-full accent-zinc-100 bg-zinc-800 rounded-[var(--radius-sm)] appearance-none h-1 cursor-pointer"
         />
       </div>
 
-      {/* White themed start/pause and control buttons */}
+      {/* Ghost start/pause + controls — hairline border, no fill, no ring.
+          The only orange in this row is the hover state, matching the rule
+          that brand accent stays a single small touch, not the whole control. */}
       <div className="flex gap-2">
         <button
           onClick={() => setRunning((r) => !r)}
           disabled={remaining === 0}
-          className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-slate-100 text-slate-900 hover:bg-white active:scale-[0.97] smooth-transition text-xs font-bold disabled:opacity-40 disabled:pointer-events-none"
+          className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-[var(--radius-sm)] border border-zinc-700 text-zinc-100 hover:border-orange-500/60 hover:text-orange-300 active:scale-[0.98] smooth-transition text-xs font-semibold disabled:opacity-40 disabled:pointer-events-none"
         >
           {running ? <Pause size={14} /> : <Play size={14} />}
-          <span>{running ? 'Pause' : 'Start'}</span>
+          <span>{running ? '暂停' : '开始'}</span>
         </button>
 
         <button
           onClick={addMinute}
-          className="flex items-center justify-center gap-1 px-3 py-2 rounded-xl border border-slate-800 text-slate-350 hover:text-white hover:bg-slate-900 active:scale-[0.97] smooth-transition text-xs font-medium"
-          title="Add 1 minute"
+          className="flex items-center justify-center gap-1 px-3 py-2 rounded-[var(--radius-sm)] border border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:border-zinc-700 active:scale-[0.98] smooth-transition text-xs font-medium"
+          title="加一分钟"
         >
           <Plus size={14} />
           <span>1m</span>
@@ -196,23 +203,23 @@ export function CountdownTimer() {
 
         <button
           onClick={reset}
-          className="flex items-center justify-center p-2 rounded-xl border border-slate-800 text-slate-400 hover:text-white hover:bg-slate-900 active:scale-[0.97] smooth-transition"
-          title="Reset"
+          className="flex items-center justify-center p-2 rounded-[var(--radius-sm)] border border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:border-zinc-700 active:scale-[0.98] smooth-transition"
+          title="重置"
         >
           <RotateCcw size={14} />
         </button>
       </div>
 
-      {/* Presets Grid */}
+      {/* Presets — flush row, single-selected state via hairline + accent text */}
       <div className="grid grid-cols-4 gap-1.5">
         {PRESETS.map((p) => (
           <button
             key={p.label}
             onClick={() => setPreset(p.ms)}
-            className={`py-1.5 rounded-xl text-xs font-semibold border smooth-transition ${
+            className={`py-1.5 rounded-[var(--radius-sm)] text-xs font-semibold border smooth-transition ${
               targetMs === p.ms
-                ? 'bg-slate-100 text-slate-900 border-slate-100 shadow-sm'
-                : 'border-slate-850 text-slate-400 hover:text-slate-200 hover:bg-slate-900'
+                ? 'border-orange-500/60 text-orange-300 bg-orange-950/20'
+                : 'border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:border-zinc-700'
             }`}
           >
             {p.label}

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { addClass, addLink, deleteClass, deleteDingkeVariant, deleteSchool, listAllLibraryLinks, listAllLinks, listClasses, listDingkeVariants, listGlobalLibrary, listHiddenLinks, listSchools, purgeLink, removeLink, reorderLinks, restoreLink, saveDingkeVariant, saveSchool, updateClass, updateLink } from '@/lib/r2-server'
+import { addClass, addLink, clearClassSigninOverride, deleteClass, deleteDingkeVariant, getClassSignin, listAllLibraryLinks, listAllLinks, listClasses, listDingkeVariants, listGlobalLibrary, listHiddenLinks, purgeLink, removeLink, reorderLinks, restoreLink, saveDingkeVariant, setClassSigninOverride, updateClass, updateLink } from '@/lib/r2-server'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -27,7 +27,6 @@ export async function POST(req: Request) {
           code: body.code,
           name: body.name,
           createdAt: body.createdAt ?? new Date().toISOString(),
-          schoolId: body.schoolId ?? undefined,
           dingkeVariantId: body.dingkeVariantId ?? undefined,
         })
         return NextResponse.json({ ok: true })
@@ -42,17 +41,13 @@ export async function POST(req: Request) {
       case 'deleteDingkeVariant':
         await deleteDingkeVariant(body.id)
         return NextResponse.json({ ok: true })
-      case 'listSchools':
-        return NextResponse.json(await listSchools())
-      case 'saveSchool':
-        return NextResponse.json(await saveSchool({
-          id: body.id,
-          name: body.name,
-          url: body.url,
-          passcode: body.passcode,
-        }))
-      case 'deleteSchool':
-        await deleteSchool(body.id)
+      case 'getClassSignin':
+        return NextResponse.json(await getClassSignin(body.code))
+      case 'saveClassSignin':
+        await setClassSigninOverride(body.code, body.url, body.passcode)
+        return NextResponse.json(await getClassSignin(body.code))
+      case 'clearClassSignin':
+        await clearClassSigninOverride(body.code)
         return NextResponse.json({ ok: true })
       case 'listLinks':
         return NextResponse.json(await listAllLinks(body.code))

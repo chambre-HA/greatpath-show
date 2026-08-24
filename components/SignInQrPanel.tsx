@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { ExternalLink, Menu, Pencil, QrCode, RefreshCw, School, Trash2, Users } from 'lucide-react'
+import { ExternalLink, Menu, Pencil, QrCode, RefreshCw, Trash2 } from 'lucide-react'
 import { QRCodeSVG } from 'qrcode.react'
 import type { ClassSignin } from '@/types'
 
@@ -9,10 +9,10 @@ import type { ClassSignin } from '@/types'
 // passcode staff can rotate there; students scan, enter the passcode, and the
 // attendance record lands in greatpath's database (no greatpath login needed).
 //
-// Two links can apply, mirroring greatpath: the class's own link (managed on
-// the class card in 班级管理) wins, and the 学堂-wide link an admin assigned is
-// the fallback. The class's own link is entered right here — anyone on the
-// class page can paste it, and it stays until someone replaces or clears it.
+// Every class has its own link — there is no shared/学堂-wide fallback. It's
+// entered right here (managed on the class card in 班级管理, or from the admin
+// panel) — anyone on the class page can paste it, and it stays until someone
+// replaces or clears it.
 //
 // The class page keeps a small copy pinned in the sidebar so latecomers can
 // scan mid-presentation; this is the enlarged view of the same thing.
@@ -38,7 +38,7 @@ export function SignInQrPanel({
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const own = signin?.source === 'class' ? signin : null
+  const own = signin
 
   useEffect(() => {
     if (!editing) {
@@ -78,7 +78,7 @@ export function SignInQrPanel({
   }
 
   async function handleClear() {
-    if (!confirm('确定清除本班签到链接？之后将改用学堂的备用链接。')) return
+    if (!confirm('确定清除本班签到链接？清除后本班将暂无签到二维码，直到重新设置。')) return
     await post({ action: 'clear' })
   }
 
@@ -90,43 +90,33 @@ export function SignInQrPanel({
           {onToggleSidebar && (
             <button
               onClick={onToggleSidebar}
-              className="p-2 -ml-2 rounded-xl text-gray-400 hover:text-gray-200 hover:bg-gray-900 md:hidden"
+              className="p-2 -ml-2 rounded-[var(--radius-sm)] text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900 md:hidden"
               aria-label="打开侧栏"
             >
               <Menu size={18} />
             </button>
           )}
-          <div className="w-8 h-8 rounded-lg border bg-emerald-950/40 border-emerald-900/30 flex items-center justify-center">
-            <QrCode size={16} className="text-emerald-400" />
+          <div className="w-8 h-8 rounded-[var(--radius-sm)] bg-zinc-800 flex items-center justify-center">
+            <QrCode size={16} className="text-zinc-400" />
           </div>
           <div>
             <h2 className="text-lg font-bold text-white leading-tight">签到二维码</h2>
-            <p className="text-xs text-gray-500">扫码后凭口令签到，无需登录 Greatpath</p>
+            <p className="text-xs text-zinc-500">扫码后凭口令签到，无需登录 Greatpath</p>
           </div>
         </div>
 
-        {/* QR + passcode: the class's own link, else the 学堂 fallback */}
+        {/* QR + passcode for the class's own link */}
         {signin ? (
           <div className="flex flex-col items-center gap-4 mb-8">
-            <div className="bg-white p-5 rounded-2xl">
+            <div className="bg-white p-5 rounded-[var(--radius-md)]">
               <QRCodeSVG value={signin.url} size={280} level="M" />
             </div>
             <div className="text-center">
-              <span
-                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[11px] font-semibold ${
-                  signin.source === 'class'
-                    ? 'border-emerald-900/50 bg-emerald-950/40 text-emerald-300'
-                    : 'border-slate-800 bg-slate-900/60 text-slate-400'
-                }`}
-              >
-                {signin.source === 'class' ? <Users size={12} /> : <School size={12} />}
-                {signin.source === 'class' ? '本班专属链接' : '学堂备用链接'}
-              </span>
-              <p className="text-sm font-semibold text-white mt-2">{signin.label}</p>
+              <p className="text-sm font-semibold text-white">{signin.label}</p>
               {signin.passcode ? (
                 <>
-                  <p className="text-[10px] uppercase font-bold tracking-wider text-slate-500 mt-3">口令</p>
-                  <p className="text-4xl font-bold text-emerald-300 tracking-[0.2em] mt-1">
+                  <p className="text-[10px] uppercase font-bold tracking-wider text-zinc-500 mt-3">口令</p>
+                  <p className="text-4xl font-bold text-orange-300 tracking-[0.2em] mt-1">
                     {signin.passcode}
                   </p>
                 </>
@@ -138,7 +128,7 @@ export function SignInQrPanel({
                   href={signin.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-gray-800 text-xs font-semibold text-gray-400 hover:text-white hover:bg-gray-900 smooth-transition"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[var(--radius-sm)] border border-zinc-800 text-xs font-semibold text-zinc-400 hover:text-white hover:bg-zinc-900 smooth-transition"
                 >
                   <ExternalLink size={12} />
                   <span>打开签到页</span>
@@ -146,32 +136,32 @@ export function SignInQrPanel({
                 <button
                   onClick={handleRefresh}
                   disabled={refreshing}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-gray-800 text-xs font-semibold text-gray-400 hover:text-white hover:bg-gray-900 disabled:opacity-40 smooth-transition"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[var(--radius-sm)] border border-zinc-800 text-xs font-semibold text-zinc-400 hover:text-white hover:bg-zinc-900 disabled:opacity-40 smooth-transition"
                 >
                   <RefreshCw size={12} className={refreshing ? 'animate-spin' : undefined} />
                   <span>刷新口令</span>
                 </button>
               </div>
-              <p className="text-xs text-gray-600 mt-3">二维码同步显示在侧栏，迟到的学员随时可扫</p>
+              <p className="text-xs text-zinc-600 mt-3">二维码同步显示在侧栏，迟到的学员随时可扫</p>
             </div>
           </div>
         ) : (
-          <div className="flex flex-col items-center gap-3 py-12 mb-8 text-gray-600">
+          <div className="flex flex-col items-center gap-3 py-12 mb-8 text-zinc-600">
             <QrCode size={48} className="opacity-40" />
             <p className="text-sm text-center max-w-sm">
               本班尚未设置签到链接。可在下方填入本班在 Greatpath「班级管理」中的专属链接与口令，
-              或请管理员在后台为本班关联学堂。
+              或请管理员在后台为本班设置。
             </p>
           </div>
         )}
 
         {/* The class's own link — maintained by the class itself */}
-        <div className="rounded-2xl border border-gray-800 bg-gray-950/40 p-4">
+        <div className="rounded-[var(--radius-md)] border border-zinc-800 bg-zinc-950/40 p-4">
           <div className="flex items-center justify-between gap-3">
             <div className="min-w-0">
               <h3 className="text-sm font-bold text-white">本班签到链接</h3>
               {!own && !editing && (
-                <p className="text-xs text-gray-500 mt-0.5">
+                <p className="text-xs text-zinc-500 mt-0.5">
                   来自 Greatpath「班级管理」班级卡片上的专属链接。
                 </p>
               )}
@@ -180,7 +170,7 @@ export function SignInQrPanel({
               <div className="shrink-0 flex items-center gap-2">
                 <button
                   onClick={() => setEditing(true)}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-gray-800 text-xs font-semibold text-gray-300 hover:text-white hover:bg-gray-900 smooth-transition"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[var(--radius-sm)] border border-zinc-800 text-xs font-semibold text-zinc-300 hover:text-white hover:bg-zinc-900 smooth-transition"
                 >
                   <Pencil size={12} />
                   <span>{own ? '修改' : '添加'}</span>
@@ -189,9 +179,9 @@ export function SignInQrPanel({
                   <button
                     onClick={handleClear}
                     disabled={saving}
-                    className="p-2 rounded-xl border border-gray-800 text-gray-500 hover:text-red-400 hover:bg-gray-900 disabled:opacity-40 smooth-transition"
+                    className="p-2 rounded-[var(--radius-sm)] border border-zinc-800 text-zinc-500 hover:text-red-400 hover:bg-zinc-900 disabled:opacity-40 smooth-transition"
                     aria-label="清除本班签到链接"
-                    title="清除，改用学堂备用链接"
+                    title="清除本班签到链接"
                   >
                     <Trash2 size={13} />
                   </button>
@@ -206,27 +196,27 @@ export function SignInQrPanel({
                 value={url}
                 onChange={e => setUrl(e.target.value)}
                 placeholder="签到链接（https://…/checkin/…）"
-                className="w-full px-3 py-2 rounded-xl bg-gray-900 border border-gray-800 text-sm text-white placeholder:text-gray-600 outline-none focus:border-gray-600"
+                className="w-full px-3 py-2 rounded-[var(--radius-sm)] bg-zinc-900 border border-zinc-800 text-sm text-white placeholder:text-zinc-600 outline-none focus:border-zinc-600"
               />
               <input
                 value={passcode}
                 onChange={e => setPasscode(e.target.value)}
                 placeholder="口令（如：012459）"
-                className="w-full px-3 py-2 rounded-xl bg-gray-900 border border-gray-800 text-sm text-white placeholder:text-gray-600 outline-none focus:border-gray-600 tracking-[0.15em]"
+                className="w-full px-3 py-2 rounded-[var(--radius-sm)] bg-zinc-900 border border-zinc-800 text-sm text-white placeholder:text-zinc-600 outline-none focus:border-zinc-600 tracking-[0.15em]"
               />
               {error && <p className="text-xs text-red-400">{error}</p>}
               <div className="flex items-center gap-2 pt-1">
                 <button
                   onClick={() => post({ action: 'save', url, passcode })}
                   disabled={saving || !url.trim()}
-                  className="px-3 py-1.5 rounded-xl bg-emerald-600 text-xs font-semibold text-white hover:bg-emerald-500 disabled:opacity-40 smooth-transition"
+                  className="px-3 py-1.5 rounded-[var(--radius-sm)] bg-orange-600 text-xs font-semibold text-white hover:bg-orange-500 disabled:opacity-40 smooth-transition"
                 >
                   保存
                 </button>
                 <button
                   onClick={() => setEditing(false)}
                   disabled={saving}
-                  className="px-3 py-1.5 rounded-xl border border-gray-800 text-xs font-semibold text-gray-400 hover:text-white hover:bg-gray-900 disabled:opacity-40 smooth-transition"
+                  className="px-3 py-1.5 rounded-[var(--radius-sm)] border border-zinc-800 text-xs font-semibold text-zinc-400 hover:text-white hover:bg-zinc-900 disabled:opacity-40 smooth-transition"
                 >
                   取消
                 </button>
@@ -238,18 +228,18 @@ export function SignInQrPanel({
                 href={own.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="block text-xs text-gray-400 break-all underline decoration-dotted underline-offset-4 hover:text-emerald-300 smooth-transition"
+                className="block text-xs text-zinc-400 break-all underline decoration-dotted underline-offset-4 hover:text-orange-300 smooth-transition"
               >
                 {own.url}
               </a>
               {own.updatedAt && (
-                <p className="text-xs text-gray-600 mt-1">
+                <p className="text-xs text-zinc-600 mt-1">
                   更新于 {new Date(own.updatedAt).toLocaleString('zh-CN', { hour12: false })}
                 </p>
               )}
             </div>
           ) : (
-            <p className="mt-3 text-xs text-gray-600">尚未设置，当前使用学堂的备用链接。</p>
+            <p className="mt-3 text-xs text-zinc-600">本班尚未设置签到链接。</p>
           )}
           {!editing && error && <p className="text-xs text-red-400 mt-2">{error}</p>}
         </div>

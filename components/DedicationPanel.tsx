@@ -132,15 +132,13 @@ export function DedicationPanel({ classCode, onToggleSidebar }: { classCode: str
   const hasActive = groups.some(g => g.people.some(p => !p.paused))
 
   return (
-    <div className="flex-1 flex flex-col bg-gray-900 min-w-0 min-h-0 overflow-y-auto premium-glow-bg relative">
-      <div className="absolute top-0 right-1/4 w-96 h-96 rounded-full bg-pink-500/5 blur-[100px] pointer-events-none" />
-
+    <div className="flex-1 flex flex-col bg-zinc-900 min-w-0 min-h-0 overflow-y-auto relative">
       {/* Panel toolbar */}
-      <header className="sticky top-0 z-30 border-b border-gray-800/80 bg-gray-950/80 backdrop-blur px-4 py-3.5 flex items-center gap-3 shrink-0">
+      <header className="sticky top-0 z-30 border-b border-zinc-800 bg-zinc-950/80 backdrop-blur px-4 py-3.5 flex items-center gap-3 shrink-0">
         {onToggleSidebar && (
           <button
             onClick={onToggleSidebar}
-            className="p-1.5 -ml-1.5 text-gray-400 hover:text-white md:hidden"
+            className="p-1.5 -ml-1.5 text-zinc-400 hover:text-white md:hidden"
             aria-label="Open sidebar"
           >
             <Menu size={18} />
@@ -150,7 +148,7 @@ export function DedicationPanel({ classCode, onToggleSidebar }: { classCode: str
         <button
           onClick={handleCopy}
           disabled={!hasActive}
-          className="flex items-center gap-1.5 px-4 py-2 text-xs rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold disabled:opacity-40 disabled:pointer-events-none active:scale-[0.98] transition-all duration-250"
+          className="flex items-center gap-1.5 px-4 py-2 text-xs rounded-[var(--radius-sm)] border border-zinc-700 text-zinc-300 hover:text-white hover:border-zinc-500 font-semibold disabled:opacity-40 disabled:pointer-events-none active:scale-[0.98] smooth-transition"
         >
           {copied ? <Check size={13} /> : <Copy size={13} />}
           <span>{copied ? '已复制' : '复制本周名单'}</span>
@@ -159,25 +157,25 @@ export function DedicationPanel({ classCode, onToggleSidebar }: { classCode: str
 
       <div className="max-w-2xl w-full mx-auto px-4 py-8 space-y-6 relative z-10">
         {error && (
-          <p className="text-xs text-rose-400 bg-rose-950/20 py-2 px-4 rounded-xl border border-rose-900/30">
+          <p className="text-xs text-rose-400 bg-rose-950/20 py-2 px-4 rounded-[var(--radius-sm)] border border-rose-900/30">
             {error}
           </p>
         )}
 
         {loading ? (
-          <div className="flex flex-col items-center justify-center py-20 text-slate-500 text-sm gap-2">
-            <svg className="animate-spin h-5 w-5 text-emerald-400" fill="none" viewBox="0 0 24 24">
+          <div className="flex flex-col items-center justify-center py-20 text-zinc-500 text-sm gap-2">
+            <svg className="animate-spin h-5 w-5 text-orange-400" fill="none" viewBox="0 0 24 24">
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
             </svg>
             <span>加载名单中...</span>
           </div>
         ) : groups.length === 0 ? (
-          <div className="text-center py-16 glass-panel rounded-2xl border border-slate-800/80 p-8">
-            <p className="text-slate-400 text-sm italic">暂无名单，请在下方新增回向类型并添加姓名。</p>
+          <div className="text-center py-16 bg-zinc-900/40 rounded-[var(--radius-md)] border border-zinc-800 p-8">
+            <p className="text-zinc-400 text-sm italic">暂无名单，请在下方新增回向类型并添加姓名。</p>
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-8">
             {groups.map(group => (
               <GroupCard
                 key={group.id}
@@ -193,14 +191,19 @@ export function DedicationPanel({ classCode, onToggleSidebar }: { classCode: str
           </div>
         )}
 
-        <form onSubmit={handleAddGroup} className="flex gap-2 p-4 rounded-2xl glass-panel border border-slate-850 shadow-xl bg-slate-900/35">
+        {/* One fused control — shared border, button flush against the
+            input — rather than two separate boxes with a gap between. */}
+        <form
+          onSubmit={handleAddGroup}
+          className="flex rounded-[var(--radius-sm)] border border-zinc-800 bg-zinc-950 overflow-hidden focus-within:border-zinc-600 smooth-transition"
+        >
           <input
             type="text"
             list="dedication-purposes"
             placeholder="新增回向类型（如：早日康复、高考顺利）"
             value={newPurpose}
             onChange={e => setNewPurpose(e.target.value)}
-            className="flex-1 min-w-0 px-3.5 py-2.5 text-sm rounded-xl bg-slate-950 border border-slate-800 text-slate-100 placeholder-slate-600 focus:outline-none focus:border-emerald-500/80 transition-all smooth-transition"
+            className="flex-1 min-w-0 px-3.5 py-2.5 text-sm bg-transparent text-zinc-100 placeholder-zinc-600 focus:outline-none"
           />
           <datalist id="dedication-purposes">
             {groups.map(g => <option key={g.id} value={g.purpose} />)}
@@ -209,7 +212,7 @@ export function DedicationPanel({ classCode, onToggleSidebar }: { classCode: str
           <button
             type="submit"
             disabled={adding || !newPurpose.trim()}
-            className="flex items-center justify-center gap-1.5 px-4 py-2.5 text-xs rounded-xl bg-slate-100 text-slate-900 font-bold hover:bg-white active:scale-[0.98] disabled:opacity-40 disabled:pointer-events-none transition-all duration-200 shrink-0"
+            className="flex items-center justify-center gap-1.5 px-4 py-2.5 text-xs font-bold border-l border-zinc-800 bg-zinc-900 text-zinc-300 hover:bg-zinc-800 hover:text-white active:scale-[0.98] disabled:opacity-40 disabled:pointer-events-none smooth-transition shrink-0"
           >
             <Plus size={14} />
             <span>{adding ? '添加中...' : '添加'}</span>
@@ -218,8 +221,8 @@ export function DedicationPanel({ classCode, onToggleSidebar }: { classCode: str
       </div>
 
       {toastMsg && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-4 py-3 rounded-xl glass-panel border border-emerald-500/30 text-white text-xs font-semibold shadow-2xl flex items-center gap-2">
-          <Check size={14} className="text-emerald-400 animate-scale-up" />
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-4 py-3 rounded-[var(--radius-sm)] bg-zinc-900 border border-orange-500/30 text-white text-xs font-semibold shadow-2xl flex items-center gap-2">
+          <Check size={14} className="text-orange-400 animate-scale-up" />
           <span>{toastMsg}</span>
         </div>
       )}

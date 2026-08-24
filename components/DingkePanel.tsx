@@ -166,12 +166,12 @@ export function DingkePanel({ classCode, onToggleSidebar, onShowActivities }: Di
   const isLast = index === sections.length - 1
 
   return (
-    <div ref={rootRef} className="flex-1 flex flex-col bg-gray-900 min-w-0 min-h-0 overflow-hidden relative">
-      <header className="z-30 border-b border-gray-800/80 bg-gray-950/80 backdrop-blur px-4 py-3 flex items-center gap-3 shrink-0">
+    <div ref={rootRef} className="flex-1 flex flex-col bg-zinc-900 min-w-0 min-h-0 overflow-hidden relative">
+      <header className="z-30 border-b border-zinc-800/80 bg-zinc-950/80 backdrop-blur px-4 py-3 flex items-center gap-3 shrink-0">
         {onToggleSidebar && (
           <button
             onClick={onToggleSidebar}
-            className="p-1.5 -ml-1.5 text-gray-400 hover:text-white [@media(min-width:768px)_and_(min-height:640px)]:hidden"
+            className="p-1.5 -ml-1.5 text-zinc-400 hover:text-white [@media(min-width:768px)_and_(min-height:640px)]:hidden"
             aria-label="打开侧栏"
           >
             <Menu size={18} />
@@ -185,14 +185,14 @@ export function DingkePanel({ classCode, onToggleSidebar, onShowActivities }: Di
             )}
           </h1>
           {section.subtitle && (
-            <p className="text-[11px] text-slate-500 truncate mt-0.5">{section.subtitle}</p>
+            <p className="text-[11px] text-zinc-500 truncate mt-0.5">{section.subtitle}</p>
           )}
         </div>
 
         {onShowActivities && isFirst && (
           <button
             onClick={onShowActivities}
-            className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-800 text-[11px] font-semibold text-slate-400 hover:text-white hover:bg-slate-900 smooth-transition"
+            className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-[var(--radius-sm)] border border-zinc-800 text-[11px] font-semibold text-zinc-400 hover:text-white hover:bg-zinc-900 smooth-transition"
             title="等候师兄进入会议室时播放"
           >
             <Sparkles size={13} />
@@ -201,7 +201,7 @@ export function DingkePanel({ classCode, onToggleSidebar, onShowActivities }: Di
         )}
         <button
           onClick={cycleZoom}
-          className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl border border-slate-800 text-[11px] font-bold text-slate-400 hover:text-white hover:bg-slate-900 smooth-transition"
+          className="flex items-center gap-1 px-2.5 py-1.5 rounded-[var(--radius-sm)] border border-zinc-800 text-[11px] font-bold text-zinc-400 hover:text-white hover:bg-zinc-900 smooth-transition"
           title="调整字号"
         >
           <Type size={13} />
@@ -209,14 +209,14 @@ export function DingkePanel({ classCode, onToggleSidebar, onShowActivities }: Di
         </button>
         <button
           onClick={() => setEditing(true)}
-          className="p-2 rounded-xl border border-slate-800 text-slate-400 hover:text-white hover:bg-slate-900 smooth-transition"
+          className="p-2 rounded-[var(--radius-sm)] border border-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-900 smooth-transition"
           aria-label="编辑本环节"
         >
           <Pencil size={14} />
         </button>
         <button
           onClick={toggleFullscreen}
-          className="p-2 rounded-xl border border-slate-800 text-slate-400 hover:text-white hover:bg-slate-900 smooth-transition"
+          className="p-2 rounded-[var(--radius-sm)] border border-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-900 smooth-transition"
           aria-label={fullscreen ? '退出全屏' : '全屏'}
         >
           {fullscreen ? <Minimize size={14} /> : <Maximize size={14} />}
@@ -236,7 +236,7 @@ export function DingkePanel({ classCode, onToggleSidebar, onShowActivities }: Di
           style={{ fontSize: `${zoom}rem` }}
         >
           <div className="px-4 py-4 space-y-3.5">
-            <p className="text-[0.68em] uppercase tracking-[0.2em] font-bold text-slate-600">主持人念诵稿</p>
+            <p className="text-[0.68em] uppercase tracking-[0.2em] font-bold text-zinc-600">主持人念诵稿</p>
 
             {section.audio && section.audioFirst && <AudioBar audio={section.audio} />}
 
@@ -257,7 +257,7 @@ export function DingkePanel({ classCode, onToggleSidebar, onShowActivities }: Di
             {onShowActivities && isFirst && (
               <button
                 onClick={onShowActivities}
-                className="sm:hidden w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-slate-800/80 bg-slate-900/40 text-xs font-semibold text-slate-400 active:scale-[0.98] smooth-transition"
+                className="sm:hidden w-full flex items-center justify-center gap-2 px-4 py-3 rounded-[var(--radius-sm)] border border-zinc-800/80 bg-zinc-900/40 text-xs font-semibold text-zinc-400 active:scale-[0.98] smooth-transition"
               >
                 <Sparkles size={14} />
                 <span>候场播放活动展示</span>
@@ -268,11 +268,11 @@ export function DingkePanel({ classCode, onToggleSidebar, onShowActivities }: Di
       </div>
 
       {/* Step bar */}
-      <div className="shrink-0 border-t border-gray-800/60 bg-gray-950/85 px-3 py-2.5 flex items-center gap-2">
+      <div className="shrink-0 border-t border-zinc-800/60 bg-zinc-950/85 px-3 py-2.5 flex items-center gap-2">
         <button
           onClick={() => go(-1)}
           disabled={isFirst}
-          className="flex items-center gap-1 px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-xs font-bold text-slate-200 hover:bg-slate-800 active:scale-[0.97] smooth-transition disabled:opacity-30 disabled:pointer-events-none"
+          className="flex items-center gap-1 px-3 py-2 rounded-[var(--radius-sm)] bg-zinc-900 border border-zinc-800 text-xs font-bold text-zinc-200 hover:bg-zinc-800 active:scale-[0.97] smooth-transition disabled:opacity-30 disabled:pointer-events-none"
         >
           <ChevronLeft size={15} />
           <span className="hidden sm:inline">上一步</span>
@@ -283,10 +283,10 @@ export function DingkePanel({ classCode, onToggleSidebar, onShowActivities }: Di
             <button
               key={s.id}
               onClick={() => goTo(i)}
-              className={`px-2.5 py-1.5 rounded-lg text-[11px] font-semibold whitespace-nowrap smooth-transition ${
+              className={`px-2.5 py-1.5 rounded-[var(--radius-sm)] text-[11px] font-semibold whitespace-nowrap smooth-transition ${
                 i === index
-                  ? 'bg-emerald-600/20 text-emerald-300 border border-emerald-700/40'
-                  : 'text-slate-500 hover:text-slate-200 border border-transparent'
+                  ? 'bg-orange-600/20 text-orange-300 border border-orange-700/40'
+                  : 'text-zinc-500 hover:text-zinc-200 border border-transparent'
               }`}
             >
               {i + 1}. {s.title}
@@ -294,14 +294,14 @@ export function DingkePanel({ classCode, onToggleSidebar, onShowActivities }: Di
           ))}
         </div>
 
-        <span className="shrink-0 text-[11px] font-mono tabular-nums text-slate-500">
+        <span className="shrink-0 text-[11px] font-mono tabular-nums text-zinc-500">
           {index + 1}/{sections.length}
         </span>
 
         <button
           onClick={() => go(1)}
           disabled={isLast}
-          className="flex items-center gap-1 px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-xs font-bold text-white active:scale-[0.97] smooth-transition disabled:opacity-30 disabled:pointer-events-none"
+          className="flex items-center gap-1 px-3 py-2 rounded-[var(--radius-sm)] bg-orange-600 hover:bg-orange-500 text-xs font-bold text-white active:scale-[0.97] smooth-transition disabled:opacity-30 disabled:pointer-events-none"
         >
           <span className="hidden sm:inline">下一步</span>
           <ChevronRight size={15} />

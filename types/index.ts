@@ -61,32 +61,15 @@ export interface ClassInfo {
   code: string
   name: string
   createdAt: string
-  /** 学堂 whose sign-in link this class uses (see School). */
-  schoolId?: string
   /** 定课 script this class runs (see DingkeVariant). Unset = the built-in default script. */
   dingkeVariantId?: string
 }
 
 /**
- * A 学堂 (academy) as far as sign-in goes: greatpath issues one fixed check-in
- * URL per 学堂 plus a passcode that staff can rotate there. Classes point at a
- * school rather than carrying their own copy, so a rotated passcode is updated
- * in one place.
- */
-export interface School {
-  id: string
-  name: string
-  url: string
-  passcode: string
-  updatedAt: string
-}
-
-/**
- * A class's own check-in link. greatpath now issues a per-class link (managed on
- * the class card in 班级管理) alongside the 学堂-wide one, and treats the 学堂 link
- * as the fallback — so this takes precedence over the class's School when set.
- * The class itself maintains it from the class page; it stays until someone
- * there replaces or clears it.
+ * A class's own check-in link and 口令. Greatpath issues one per class — there
+ * is no shared/学堂-wide fallback. Editable from the class's own page (no
+ * admin password needed there) or from the admin panel; whichever saves last
+ * wins, same object either way.
  */
 export interface ClassSigninOverride {
   url: string
@@ -94,17 +77,12 @@ export interface ClassSigninOverride {
   updatedAt: string
 }
 
-/** Sign-in config resolved for one class, safe to send to the class page. */
+/** Sign-in config resolved for one class, safe to send to the class page. Null when the class hasn't set one yet. */
 export interface ClassSignin {
-  /** 'class' = the class's own link, 'school' = the 学堂 fallback. */
-  source: 'class' | 'school'
-  /** Heading shown above the 口令: class name or 学堂 name. */
+  /** Heading shown above the 口令 — the class's own name. */
   label: string
   url: string
   passcode: string
-  /** Only for source 'school'. */
-  schoolId?: string
-  /** Only for source 'class'. */
   updatedAt?: string
 }
 
