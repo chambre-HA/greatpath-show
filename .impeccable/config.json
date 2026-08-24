@@ -1,0 +1,16 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "gray-on-color",
+        "value": "*",
+        "files": [
+          "app/admin/page.tsx"
+        ],
+        "createdAt": "2026-08-24T05:45:09.408Z"
+      }
+    ]
+  }
+}

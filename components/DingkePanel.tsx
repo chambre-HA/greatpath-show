@@ -228,7 +228,7 @@ export function DingkePanel({ classCode, onToggleSidebar, onShowActivities }: Di
           blue; the script half stays near-black so the two never read as one
           surface. */}
       <div className="flex-1 min-h-0 flex flex-col landscape:flex-row [@media(min-width:768px)]:flex-row">
-        <SlidePane slide={section.slide} zoom={zoom} sectionId={section.id} direction={direction} />
+        <SlidePane slide={section.slide} zoom={zoom} sectionId={section.id} direction={direction} video={section.video} />
 
         <aside
           ref={scriptRef}

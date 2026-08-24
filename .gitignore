@@ -18,6 +18,7 @@
 # Local tooling
 .claude/
 *.code-workspace
+.impeccable/hook.cache.json
 # Misc
 .DS_Store
 *.pem

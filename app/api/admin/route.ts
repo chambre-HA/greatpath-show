@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { addClass, addLink, deleteClass, deleteSchool, listAllLibraryLinks, listAllLinks, listClasses, listGlobalLibrary, listHiddenLinks, listSchools, purgeLink, removeLink, reorderLinks, restoreLink, saveSchool, updateClass, updateLink } from '@/lib/r2-server'
+import { addClass, addLink, deleteClass, deleteDingkeVariant, deleteSchool, listAllLibraryLinks, listAllLinks, listClasses, listDingkeVariants, listGlobalLibrary, listHiddenLinks, listSchools, purgeLink, removeLink, reorderLinks, restoreLink, saveDingkeVariant, saveSchool, updateClass, updateLink } from '@/lib/r2-server'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -28,7 +28,19 @@ export async function POST(req: Request) {
           name: body.name,
           createdAt: body.createdAt ?? new Date().toISOString(),
           schoolId: body.schoolId ?? undefined,
+          dingkeVariantId: body.dingkeVariantId ?? undefined,
         })
+        return NextResponse.json({ ok: true })
+      case 'listDingkeVariants':
+        return NextResponse.json(await listDingkeVariants())
+      case 'saveDingkeVariant':
+        return NextResponse.json(await saveDingkeVariant({
+          id: body.id,
+          name: body.name,
+          sections: body.sections,
+        }))
+      case 'deleteDingkeVariant':
+        await deleteDingkeVariant(body.id)
         return NextResponse.json({ ok: true })
       case 'listSchools':
         return NextResponse.json(await listSchools())
