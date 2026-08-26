@@ -50,12 +50,11 @@ export function Sidebar({ className, activeFunction, isOpen, signin, onSelectFun
         </div>
       </div>
 
-      {/* Function selector */}
-      {/* Navigation keeps its full height and the timer below it takes the
-          squeeze: on a laptop the timer is tall enough to push every function
-          but the first off screen, and the sidebar is the only way to reach
-          them. */}
-      <nav className="shrink-0 px-3 py-4 space-y-1.5">
+      {/* Function selector — the list that grows over time (new functions
+          keep getting added, e.g. 常用资源), so it's the flexible region that
+          scrolls internally when it outgrows the sidebar. The timer below it
+          keeps a fixed height instead of being squeezed/scrolled itself. */}
+      <nav className="flex-1 min-h-0 overflow-y-auto px-3 py-4 space-y-1.5">
         <p className="px-3 text-[10px] uppercase font-bold tracking-wider text-zinc-500 mb-1">功能导航</p>
         {FUNCTIONS.map(fn => {
           const Icon = fn.icon
@@ -77,8 +76,8 @@ export function Sidebar({ className, activeFunction, isOpen, signin, onSelectFun
         })}
       </nav>
 
-      {/* Timer — pinned at bottom */}
-      <div className="flex-1 min-h-0 overflow-y-auto px-4 pt-2 pb-2 border-t border-zinc-800 bg-zinc-950/80">
+      {/* Timer — pinned at bottom, fixed height regardless of the nav list's length */}
+      <div className="shrink-0 px-4 pt-2 pb-2 border-t border-zinc-800 bg-zinc-950/80">
         <h2 className="px-3 text-[10px] uppercase font-bold tracking-wider text-zinc-500 mb-1">计时器</h2>
         <CountdownTimer />
       </div>
