@@ -5,11 +5,12 @@ import {
   PutObjectCommand,
   S3Client,
 } from '@aws-sdk/client-s3'
-import type { ClassInfo, ClassSignin, ClassSigninOverride, DedicationGroup, DedicationPerson, DingkeOverrides, DingkeSection, DingkeSectionOverride, DingkeVariant, MessageTemplate, ShowLink } from '@/types'
+import type { ClassInfo, ClassSignin, ClassSigninOverride, DedicationGroup, DedicationPerson, DingkeOverrides, DingkeSection, DingkeSectionOverride, DingkeVariant, MessageTemplate, ResourceLink, ShowLink } from '@/types'
 import { DEFAULT_DINGKE_SECTIONS } from './dingke-content'
 import { blocksToBody } from './dingke-resolve'
 
 const CLASSES_KEY = '_classes.json'
+const RESOURCES_KEY = '_resources.json'
 const DINGKE_VARIANTS_KEY = '_dingke-variants.json'
 const SIGNIN_KEY = 'signin.json'
 const INDEX_KEY = 'links.json'
@@ -769,4 +770,81 @@ export async function clearDingkeOverride(classCode: string, sectionId: string):
   const all = await getJson<DingkeOverrides>(client, dingkeKey(classCode), {})
   delete all[sectionId]
   await putJson(client, dingkeKey(classCode), all)
+}
+
+// ── 常用资源 (useful resources) ─────────────────────────────────────────────
+// One global list, curated by the admin, shared by every class — not stored
+// per class like ShowLink. Grouped by category client-side for display.
+
+function sortResources(items: ResourceLink[]): ResourceLink[] {
+  return [...items].sort((a, b) => {
+    const oa = a.order ?? Number.MAX_SAFE_INTEGER
+    const ob = b.order ?? Number.MAX_SAFE_INTEGER
+    return oa !== ob ? oa - ob : a.addedAt.localeCompare(b.addedAt)
+  })
+}
+
+function compactResourceOrder(items: ResourceLink[]): ResourceLink[] {
+  return sortResources(items).map((item, index) => ({ ...item, order: index + 1 }))
+}
+
+function normalizeResourceInput(input: { category?: string; name?: string; url?: string }) {
+  const category = input.category?.trim()
+  const name = input.name?.trim()
+  const url = input.url?.trim()
+  if (!category) throw new Error('分类不能为空')
+  if (!name) throw new Error('名称不能为空')
+  if (!url) throw new Error('链接不能为空')
+  if (!/^https?:\/\//i.test(url)) throw new Error('链接必须以 http(s):// 开头')
+  return { category, name, url }
+}
+
+export async function listResources(): Promise<ResourceLink[]> {
+  const client = getClient()
+  const items = await getJson<ResourceLink[]>(client, RESOURCES_KEY, [])
+  return sortResources(items)
+}
+
+export async function addResource(input: { category: string; name: string; url: string }): Promise<ResourceLink> {
+  const clean = normalizeResourceInput(input)
+  const client = getClient()
+  const items = await getJson<ResourceLink[]>(client, RESOURCES_KEY, [])
+  const next: ResourceLink = {
+    id: crypto.randomUUID(),
+    ...clean,
+    addedAt: new Date().toISOString(),
+    order: items.length + 1,
+  }
+  await putJson(client, RESOURCES_KEY, [...items, next])
+  return next
+}
+
+export async function updateResource(
+  input: { id: string; category: string; name: string; url: string },
+): Promise<void> {
+  const clean = normalizeResourceInput(input)
+  const client = getClient()
+  const items = await getJson<ResourceLink[]>(client, RESOURCES_KEY, [])
+  const idx = items.findIndex(r => r.id === input.id)
+  if (idx < 0) throw new Error('资源不存在')
+  items[idx] = { ...items[idx], ...clean }
+  await putJson(client, RESOURCES_KEY, items)
+}
+
+export async function removeResource(id: string): Promise<void> {
+  const client = getClient()
+  const items = await getJson<ResourceLink[]>(client, RESOURCES_KEY, [])
+  await putJson(client, RESOURCES_KEY, compactResourceOrder(items.filter(r => r.id !== id)))
+}
+
+export async function reorderResources(ids: string[]): Promise<void> {
+  const client = getClient()
+  const items = await getJson<ResourceLink[]>(client, RESOURCES_KEY, [])
+  const byId = new Map(items.map(r => [r.id, r]))
+  const next = ids.map(id => byId.get(id)).filter((r): r is ResourceLink => Boolean(r))
+    .map((r, index) => ({ ...r, order: index + 1 }))
+  // Any stored item not present in `ids` (shouldn't normally happen) keeps its
+  // place at the end rather than silently vanishing.
+  const missing = items.filter(r => !ids.includes(r.id))
+  await putJson(client, RESOURCES_KEY, [...next, ...compactResourceOrder(missing).map(r => ({ ...r, order: next.length + r.order! }))])
 }

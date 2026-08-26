@@ -1,12 +1,12 @@
 'use client'
 
 import { useState } from 'react'
-import { ArrowLeft, ChevronDown, ChevronUp, ExternalLink, Flower2, HeartHandshake, MessageSquare, Presentation, QrCode, Sparkles } from 'lucide-react'
+import { ArrowLeft, BookOpen, ChevronDown, ChevronUp, ExternalLink, Flower2, HeartHandshake, MessageSquare, Presentation, QrCode, Sparkles } from 'lucide-react'
 import { QRCodeSVG } from 'qrcode.react'
 import { CountdownTimer } from './CountdownTimer'
 import type { ClassSignin } from '@/types'
 
-export type ClassFunction = 'dingke' | 'presentation' | 'dedication' | 'messages' | 'activities' | 'signin'
+export type ClassFunction = 'dingke' | 'presentation' | 'dedication' | 'messages' | 'activities' | 'signin' | 'resources'
 
 const FUNCTIONS: { value: ClassFunction; label: string; icon: typeof Presentation }[] = [
   { value: 'dingke', label: '手机版定课', icon: Flower2 },
@@ -14,6 +14,7 @@ const FUNCTIONS: { value: ClassFunction; label: string; icon: typeof Presentatio
   { value: 'activities', label: '活动展示', icon: Sparkles },
   { value: 'dedication', label: '回向名单', icon: HeartHandshake },
   { value: 'messages', label: '消息模板', icon: MessageSquare },
+  { value: 'resources', label: '常用资源', icon: BookOpen },
 ]
 
 interface SidebarProps {
