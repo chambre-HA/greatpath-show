@@ -9,6 +9,7 @@ import { MessagesPanel } from '@/components/MessagesPanel'
 import { SignInQrPanel } from '@/components/SignInQrPanel'
 import { ActivitiesSlideshow } from '@/components/ActivitiesSlideshow'
 import { DingkePanel } from '@/components/DingkePanel'
+import { ResourcesPanel } from '@/components/ResourcesPanel'
 import { getStore } from '@/lib/links-store'
 import type { ClassInfo, ClassSignin, ShowLink } from '@/types'
 
@@ -22,7 +23,7 @@ export default function ClassPage() {
   const [activeTabId, setActiveTabId] = useState<string | null>(null)
   const [classInfo, setClassInfo] = useState<ClassInfo | null>(null)
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
-  const VALID_FUNCTIONS: ClassFunction[] = ['dingke', 'presentation', 'dedication', 'messages', 'activities', 'signin']
+  const VALID_FUNCTIONS: ClassFunction[] = ['dingke', 'presentation', 'dedication', 'messages', 'activities', 'signin', 'resources']
   const requestedFunction = searchParams.get('fn') as ClassFunction | null
   const [activeFunction, setActiveFunction] = useState<ClassFunction>(
     requestedFunction && VALID_FUNCTIONS.includes(requestedFunction) ? requestedFunction : 'presentation'
@@ -170,6 +171,9 @@ export default function ClassPage() {
           onRefresh={loadClassInfo}
           onToggleSidebar={() => setIsSidebarOpen(true)}
         />
+      )}
+      {activeFunction === 'resources' && (
+        <ResourcesPanel onToggleSidebar={() => setIsSidebarOpen(true)} />
       )}
     </main>
   )

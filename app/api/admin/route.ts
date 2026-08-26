@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { addClass, addLink, clearClassSigninOverride, deleteClass, deleteDingkeVariant, getClassSignin, listAllLibraryLinks, listAllLinks, listClasses, listDingkeVariants, listGlobalLibrary, listHiddenLinks, purgeLink, removeLink, reorderLinks, restoreLink, saveDingkeVariant, setClassSigninOverride, updateClass, updateLink } from '@/lib/r2-server'
+import { addClass, addLink, addResource, clearClassSigninOverride, deleteClass, deleteDingkeVariant, getClassSignin, listAllLibraryLinks, listAllLinks, listClasses, listDingkeVariants, listGlobalLibrary, listHiddenLinks, listResources, purgeLink, removeLink, removeResource, reorderLinks, reorderResources, restoreLink, saveDingkeVariant, setClassSigninOverride, updateClass, updateLink, updateResource } from '@/lib/r2-server'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -75,6 +75,19 @@ export async function POST(req: Request) {
         return NextResponse.json(await listGlobalLibrary(body.code))
       case 'listLibraryAll':
         return NextResponse.json(await listAllLibraryLinks())
+      case 'listResources':
+        return NextResponse.json(await listResources())
+      case 'addResource':
+        return NextResponse.json(await addResource({ category: body.category, name: body.name, url: body.url }))
+      case 'updateResource':
+        await updateResource({ id: body.id, category: body.category, name: body.name, url: body.url })
+        return NextResponse.json({ ok: true })
+      case 'removeResource':
+        await removeResource(body.id)
+        return NextResponse.json({ ok: true })
+      case 'reorderResources':
+        await reorderResources(body.ids)
+        return NextResponse.json({ ok: true })
       default:
         return NextResponse.json({ error: 'invalid action' }, { status: 400 })
     }

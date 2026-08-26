@@ -221,6 +221,20 @@ export interface OrgActivity {
   imageUrl: string | null
 }
 
+/**
+ * One entry in 常用资源 — a global, class-agnostic list of hyperlinks the
+ * admin curates and every class sees the same copy of, grouped by category.
+ * Unlike ShowLink these are never uploaded files, just plain links.
+ */
+export interface ResourceLink {
+  id: string
+  category: string
+  name: string
+  url: string
+  addedAt: string
+  order?: number
+}
+
 export interface ShowLink {
   id: string
   title: string

@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback, useRef, type ReactNode } from 'react'
-import { ChevronRight, Copy, EllipsisVertical, Eye, FileText, GripVertical, Library, Link2, Pencil, Presentation, Plus, RotateCcw, Save, ShieldAlert, Trash2, X, Shield, LogOut, Check, School, Sparkles, Tag } from 'lucide-react'
+import { BookOpen, ChevronRight, Copy, EllipsisVertical, Eye, FileText, GripVertical, Library, Link2, Pencil, Presentation, Plus, RotateCcw, Save, ShieldAlert, Trash2, X, Shield, LogOut, Check, School, Sparkles, Tag } from 'lucide-react'
 import {
   DndContext, closestCenter, PointerSensor, KeyboardSensor, useSensor, useSensors, type DragEndEvent,
 } from '@dnd-kit/core'
@@ -14,7 +14,7 @@ import { AddDocPanel } from '@/components/AddDocPanel'
 import { DEFAULT_DINGKE_SECTIONS, DINGKE_AUDIO } from '@/lib/dingke-content'
 import { blocksToBody, parseBody } from '@/lib/dingke-resolve'
 import { SlidePane } from '@/components/DingkeParts'
-import type { ClassInfo, ClassSignin, DingkeSection, DingkeVariant, ShowLink } from '@/types'
+import type { ClassInfo, ClassSignin, DingkeSection, DingkeVariant, ResourceLink, ShowLink } from '@/types'
 
 // ── API helpers ──────────────────────────────────────────────────────────────
 
@@ -1596,6 +1596,355 @@ function SharedLibraryManager({ password }: { password: string }) {
   )
 }
 
+// ── 常用资源 (useful resources) ─────────────────────────────────────────────
+// One global list shared by every class, grouped by category on the class
+// front-end. Managed here as a flat, drag-sortable list; the front-end groups
+// consecutive-by-category itself off whatever order this list is saved in.
+
+function blankResourceForm() {
+  return { category: '', name: '', url: '' }
+}
+
+function ResourcesManager({ password }: { password: string }) {
+  const [items, setItems] = useState<ResourceLink[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [busy, setBusy] = useState(false)
+  const [adding, setAdding] = useState(false)
+  const [form, setForm] = useState(blankResourceForm())
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editForm, setEditForm] = useState(blankResourceForm())
+  const [toastMsg, setToastMsg] = useState<string | null>(null)
+
+  const load = useCallback(async () => {
+    setLoading(true)
+    try {
+      const data = await adminPost(password, { action: 'listResources' })
+      setItems(Array.isArray(data) ? data : [])
+    } catch (e) {
+      setError(e instanceof Error ? e.message : '加载资源失败')
+    } finally {
+      setLoading(false)
+    }
+  }, [password])
+
+  useEffect(() => { load() }, [load])
+
+  function showToast(msg: string) {
+    setToastMsg(msg)
+    setTimeout(() => setToastMsg(null), 2000)
+  }
+
+  const categorySuggestions = [...new Set(items.map(i => i.category))].sort((a, b) => a.localeCompare(b, 'zh'))
+
+  async function handleAdd(e: React.FormEvent) {
+    e.preventDefault()
+    setBusy(true)
+    setError(null)
+    try {
+      await adminPost(password, { action: 'addResource', ...form })
+      setForm(blankResourceForm())
+      setAdding(false)
+      showToast('资源添加成功')
+      await load()
+    } catch (e) {
+      setError(e instanceof Error ? e.message : '添加失败')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  function startEdit(item: ResourceLink) {
+    setEditingId(item.id)
+    setEditForm({ category: item.category, name: item.name, url: item.url })
+    setError(null)
+  }
+
+  async function handleSaveEdit() {
+    if (!editingId) return
+    setBusy(true)
+    setError(null)
+    try {
+      await adminPost(password, { action: 'updateResource', id: editingId, ...editForm })
+      setEditingId(null)
+      showToast('资源已更新')
+      await load()
+    } catch (e) {
+      setError(e instanceof Error ? e.message : '更新失败')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function handleDelete(item: ResourceLink) {
+    if (!confirm(`确定删除「${item.name}」？`)) return
+    setBusy(true)
+    setError(null)
+    try {
+      await adminPost(password, { action: 'removeResource', id: item.id })
+      showToast('资源已删除')
+      await load()
+    } catch (e) {
+      setError(e instanceof Error ? e.message : '删除失败')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const dragSensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  )
+
+  async function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event
+    if (!over || active.id === over.id) return
+    const oldIndex = items.findIndex(i => i.id === active.id)
+    const newIndex = items.findIndex(i => i.id === over.id)
+    if (oldIndex < 0 || newIndex < 0) return
+
+    const reordered = arrayMove(items, oldIndex, newIndex)
+    setItems(reordered)
+    setBusy(true)
+    setError(null)
+    try {
+      await adminPost(password, { action: 'reorderResources', ids: reordered.map(i => i.id) })
+    } catch (e) {
+      setError(e instanceof Error ? e.message : '排序失败')
+      await load()
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const field = 'w-full px-3.5 py-2.5 text-sm rounded-[var(--radius-sm)] bg-zinc-950 border border-zinc-800 text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-orange-500 transition-all'
+
+  return (
+    <div className="max-w-2xl space-y-6">
+      <div className="flex items-center justify-between border-b border-zinc-800/60 pb-4">
+        <div>
+          <h2 className="text-lg font-extrabold text-white tracking-wide flex items-center gap-2">
+            <BookOpen size={18} className="text-orange-400" />
+            <span>常用资源</span>
+          </h2>
+          <p className="text-xs font-semibold text-zinc-500 mt-1">
+            所有班级共用的资源链接，按分类展示。拖拽调整顺序（同分类内相对顺序保留）。
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => { setAdding(v => !v); setEditingId(null) }}
+          className={`p-1.5 rounded-[var(--radius-sm)] text-zinc-400 hover:text-white border smooth-transition ${
+            adding ? 'bg-zinc-800 border-zinc-700' : 'bg-zinc-950 border-zinc-800 hover:bg-zinc-900'
+          }`}
+        >
+          {adding ? <X size={13} /> : <Plus size={13} />}
+        </button>
+      </div>
+
+      {error && (
+        <p className="text-xs text-rose-400 bg-rose-950/20 py-2 px-3 rounded-[var(--radius-sm)] border border-rose-900/30">
+          {error}
+        </p>
+      )}
+
+      {adding && (
+        <form onSubmit={handleAdd} className="p-4 rounded-[var(--radius-md)] bg-zinc-900/40 border border-zinc-800/80 space-y-3">
+          <div>
+            <label className="block text-[10px] uppercase tracking-wider font-bold text-zinc-500 mb-1.5">分类</label>
+            <input
+              className={field}
+              list="resource-categories"
+              placeholder="如：常用文档"
+              value={form.category}
+              onChange={e => setForm(f => ({ ...f, category: e.target.value }))}
+            />
+            <datalist id="resource-categories">
+              {categorySuggestions.map(c => <option key={c} value={c} />)}
+            </datalist>
+          </div>
+          <div>
+            <label className="block text-[10px] uppercase tracking-wider font-bold text-zinc-500 mb-1.5">名称</label>
+            <input
+              className={field}
+              placeholder="链接显示的名称"
+              value={form.name}
+              onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+            />
+          </div>
+          <div>
+            <label className="block text-[10px] uppercase tracking-wider font-bold text-zinc-500 mb-1.5">链接</label>
+            <input
+              className={field}
+              placeholder="https://…"
+              value={form.url}
+              onChange={e => setForm(f => ({ ...f, url: e.target.value }))}
+            />
+          </div>
+          <div className="flex justify-end gap-2 pt-1">
+            <button
+              type="button"
+              onClick={() => { setAdding(false); setForm(blankResourceForm()) }}
+              className="px-4 py-2 text-xs font-semibold text-zinc-500 hover:text-zinc-300"
+            >
+              取消
+            </button>
+            <button
+              type="submit"
+              disabled={busy || !form.category.trim() || !form.name.trim() || !form.url.trim()}
+              className="px-4 py-2 text-xs rounded-[var(--radius-sm)] bg-orange-600 hover:bg-orange-500 text-white font-bold disabled:opacity-40 disabled:pointer-events-none active:scale-[0.98] transition-all"
+            >
+              {busy ? '添加中…' : '添加资源'}
+            </button>
+          </div>
+        </form>
+      )}
+
+      {loading ? (
+        <div className="flex items-center justify-center py-16 text-zinc-500 text-sm gap-2">
+          <svg className="animate-spin h-5 w-5 text-orange-400" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+          </svg>
+          <span>正在载入资源...</span>
+        </div>
+      ) : items.length === 0 ? (
+        <p className="text-xs text-zinc-500 italic text-center py-6 bg-zinc-900/40 rounded-[var(--radius-md)] border border-zinc-800">
+          暂无资源，点击右上角「+」添加。
+        </p>
+      ) : (
+        <DndContext sensors={dragSensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <SortableContext items={items.map(i => i.id)} strategy={verticalListSortingStrategy}>
+            <ul className="space-y-2">
+              {items.map(item => {
+                const isEditing = editingId === item.id
+                return (
+                  <SortableLinkItem
+                    key={item.id}
+                    id={item.id}
+                    disabled={isEditing}
+                    className={`p-3.5 rounded-[var(--radius-md)] border transition-all duration-200 bg-zinc-900/30 hover:bg-zinc-900/50 ${
+                      isEditing ? 'border-orange-500/40' : 'border-zinc-800/80'
+                    } space-y-3 group`}
+                  >
+                    {({ attributes, listeners }) => (
+                      <>
+                        <div className="flex items-start gap-3">
+                          <button
+                            type="button"
+                            {...attributes}
+                            {...listeners}
+                            disabled={isEditing}
+                            title="拖拽排序"
+                            className="shrink-0 mt-1.5 p-1 -ml-1 rounded text-zinc-600 hover:text-zinc-300 cursor-grab active:cursor-grabbing touch-none disabled:opacity-20 disabled:pointer-events-none smooth-transition"
+                            aria-label="拖拽排序"
+                          >
+                            <GripVertical size={14} />
+                          </button>
+                          <div className="w-8 h-8 rounded-[var(--radius-sm)] bg-zinc-950 border border-zinc-800 flex items-center justify-center shrink-0 text-orange-400">
+                            <Link2 size={14} />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            {isEditing ? (
+                              <div className="space-y-2 pt-0.5">
+                                <input
+                                  type="text"
+                                  list="resource-categories"
+                                  value={editForm.category}
+                                  onChange={e => setEditForm(f => ({ ...f, category: e.target.value }))}
+                                  className="w-full px-3 py-1.5 text-xs rounded-[var(--radius-sm)] bg-zinc-950 border border-zinc-800 text-zinc-300 focus:outline-none focus:border-orange-500 transition-all"
+                                  placeholder="分类"
+                                />
+                                <input
+                                  type="text"
+                                  value={editForm.name}
+                                  onChange={e => setEditForm(f => ({ ...f, name: e.target.value }))}
+                                  className="w-full px-3 py-2 text-sm rounded-[var(--radius-sm)] bg-zinc-950 border border-zinc-800 text-zinc-100 focus:outline-none focus:border-orange-500 transition-all"
+                                  placeholder="名称"
+                                />
+                                <input
+                                  type="url"
+                                  value={editForm.url}
+                                  onChange={e => setEditForm(f => ({ ...f, url: e.target.value }))}
+                                  className="w-full px-3 py-1.5 text-xs rounded-[var(--radius-sm)] bg-zinc-950 border border-zinc-800 text-zinc-300 focus:outline-none focus:border-orange-500 transition-all"
+                                  placeholder="链接地址"
+                                />
+                              </div>
+                            ) : (
+                              <div className="pt-0.5 space-y-1">
+                                <span className="inline-block px-1.5 py-0.5 rounded text-[9px] font-bold bg-zinc-800 text-zinc-300">
+                                  {item.category}
+                                </span>
+                                <p className="text-sm font-medium text-zinc-200 truncate group-hover:text-white transition-colors">{item.name}</p>
+                                <p className="text-[10px] text-zinc-500 font-mono tracking-wider truncate">{item.url}</p>
+                              </div>
+                            )}
+                          </div>
+                          <div className="shrink-0 flex items-center gap-0.5">
+                            {isEditing ? (
+                              <button
+                                type="button"
+                                onClick={handleSaveEdit}
+                                disabled={busy || !editForm.category.trim() || !editForm.name.trim() || !editForm.url.trim()}
+                                className="p-2 rounded-[var(--radius-sm)] bg-orange-600/20 text-orange-400 hover:bg-orange-600 hover:text-white disabled:opacity-40 smooth-transition"
+                                aria-label="Save"
+                              >
+                                <Save size={14} />
+                              </button>
+                            ) : (
+                              <>
+                                <button
+                                  type="button"
+                                  onClick={() => startEdit(item)}
+                                  className="p-2 rounded-[var(--radius-sm)] text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800 smooth-transition"
+                                  aria-label="编辑"
+                                >
+                                  <Pencil size={13} />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleDelete(item)}
+                                  disabled={busy}
+                                  className="p-2 rounded-[var(--radius-sm)] text-zinc-500 hover:text-rose-500 hover:bg-rose-950/20 disabled:opacity-40 smooth-transition"
+                                  aria-label="删除"
+                                >
+                                  <Trash2 size={13} />
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                        {isEditing && (
+                          <div className="flex justify-end gap-3 border-t border-zinc-800/40 pt-2">
+                            <button
+                              type="button"
+                              onClick={() => setEditingId(null)}
+                              className="text-xs font-semibold text-zinc-500 hover:text-zinc-300"
+                            >
+                              取消
+                            </button>
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </SortableLinkItem>
+                )
+              })}
+            </ul>
+          </SortableContext>
+        </DndContext>
+      )}
+
+      {toastMsg && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[110] px-4 py-3 rounded-[var(--radius-sm)] bg-zinc-900 border border-orange-500/30 text-white text-xs font-semibold shadow-2xl flex items-center gap-2">
+          <Check size={14} className="text-orange-400" />
+          <span>{toastMsg}</span>
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ── AdminPage Dashboard Component ─────────────────────────────────────────────
 
 export default function AdminPage() {
@@ -1609,6 +1958,7 @@ export default function AdminPage() {
   const [selectedCode, setSelectedCode] = useState<string | null>(null)
   const [showLibrary, setShowLibrary] = useState(false)
   const [showDingkeVariants, setShowDingkeVariants] = useState(false)
+  const [showResources, setShowResources] = useState(false)
   const [addingClass, setAddingClass] = useState(false)
   const [newCode, setNewCode] = useState('')
   const [newName, setNewName] = useState('')
@@ -1885,7 +2235,7 @@ export default function AdminPage() {
             <p className="px-3 text-[10px] uppercase font-bold tracking-wider text-zinc-500 mb-2">全局管理</p>
             <button
               type="button"
-              onClick={() => { setShowLibrary(true); setShowDingkeVariants(false); setSelectedCode(null) }}
+              onClick={() => { setShowLibrary(true); setShowDingkeVariants(false); setShowResources(false); setSelectedCode(null) }}
               className={`w-full flex items-center gap-2.5 px-3 py-3 rounded-[var(--radius-sm)] border smooth-transition ${
                 showLibrary
                   ? 'bg-orange-600/15 border-orange-500/30 text-white'
@@ -1897,7 +2247,7 @@ export default function AdminPage() {
             </button>
             <button
               type="button"
-              onClick={() => { setShowDingkeVariants(true); setShowLibrary(false); setSelectedCode(null) }}
+              onClick={() => { setShowDingkeVariants(true); setShowLibrary(false); setShowResources(false); setSelectedCode(null) }}
               className={`w-full flex items-center gap-2.5 px-3 py-3 mt-1 rounded-[var(--radius-sm)] border smooth-transition ${
                 showDingkeVariants
                   ? 'bg-orange-600/15 border-orange-500/30 text-white'
@@ -1906,6 +2256,18 @@ export default function AdminPage() {
             >
               <Sparkles size={15} className="shrink-0" />
               <span className="text-sm font-bold">定课版本</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => { setShowResources(true); setShowLibrary(false); setShowDingkeVariants(false); setSelectedCode(null) }}
+              className={`w-full flex items-center gap-2.5 px-3 py-3 mt-1 rounded-[var(--radius-sm)] border smooth-transition ${
+                showResources
+                  ? 'bg-orange-600/15 border-orange-500/30 text-white'
+                  : 'border-transparent text-zinc-300 hover:bg-zinc-900/50 hover:text-white'
+              }`}
+            >
+              <BookOpen size={15} className="shrink-0" />
+              <span className="text-sm font-bold">常用资源</span>
             </button>
           </div>
 
@@ -1977,7 +2339,7 @@ export default function AdminPage() {
                         ? 'bg-orange-600/15 border-orange-500/30 text-white' 
                         : 'border-transparent text-zinc-300 hover:bg-zinc-900/50 hover:text-white'
                     }`}
-                    onClick={() => { setSelectedCode(cls.code); setShowLibrary(false); setShowDingkeVariants(false) }}
+                    onClick={() => { setSelectedCode(cls.code); setShowLibrary(false); setShowDingkeVariants(false); setShowResources(false) }}
                   >
                     <div className="flex-1 min-w-0">
                       {editingClassCode === cls.code ? (
@@ -2043,6 +2405,8 @@ export default function AdminPage() {
             <DingkeVariantsManager password={password} variants={dingkeVariants} classes={classes} onChanged={reloadAll} />
           ) : showLibrary ? (
             <SharedLibraryManager password={password} />
+          ) : showResources ? (
+            <ResourcesManager password={password} />
           ) : !selectedCode ? (
             <div className="h-full flex flex-col items-center justify-center text-zinc-500 text-sm gap-2">
               <School size={36} className="opacity-20" />
