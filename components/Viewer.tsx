@@ -4,7 +4,7 @@ import dynamic from 'next/dynamic'
 import { useRef, useState, useEffect } from 'react'
 import {
   AlertTriangle, Check, ChevronDown, ExternalLink, FileText, Maximize2, Menu, Minimize2,
-  Plus, Presentation, Trash2, Video, X,
+  MonitorPlay, Plus, Presentation, Trash2, Video, X,
 } from 'lucide-react'
 import { getEmbedStrategy } from '@/lib/embed'
 import { AddDocPanel } from './AddDocPanel'
@@ -35,6 +35,7 @@ interface ViewerProps {
 function fileIcon(kind: ShowLink['kind'], size = 15) {
   if (kind === 'pdf') return <FileText size={size} className="text-rose-400 shrink-0" />
   if (kind === 'video') return <Video size={size} className="text-blue-400 shrink-0" />
+  if (kind === 'html') return <MonitorPlay size={size} className="text-emerald-400 shrink-0" />
   return <Presentation size={size} className="text-amber-500 shrink-0" />
 }
 
@@ -424,7 +425,7 @@ function PptxViewer({ link }: { link: ShowLink }) {
         src={strategy.url}
         title={link.title}
         className="w-full h-full border-0"
-        allow="fullscreen; clipboard-read; clipboard-write"
+        allow="autoplay; fullscreen; clipboard-read; clipboard-write"
         allowFullScreen
         onLoad={() => setLoaded(true)}
       />
