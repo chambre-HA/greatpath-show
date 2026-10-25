@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
-  CheckCircle2, FileText, History, Link2,
+  CheckCircle2, FileText, History, Link2, MonitorPlay,
   Plus, Presentation, RotateCcw, UploadCloud, Video, XCircle,
 } from 'lucide-react'
 import { cloneLink, getStore, makeLink, validateLinkInput } from '@/lib/links-store'
@@ -20,6 +20,7 @@ function fmtSize(bytes: number) {
 function LinkIcon({ kind }: { kind: ShowLink['kind'] }) {
   if (kind === 'pdf') return <FileText size={14} className="text-rose-400 shrink-0" />
   if (kind === 'video') return <Video size={14} className="text-blue-400 shrink-0" />
+  if (kind === 'html') return <MonitorPlay size={14} className="text-emerald-400 shrink-0" />
   return <Presentation size={14} className="text-amber-500 shrink-0" />
 }
 
@@ -50,7 +51,7 @@ function LinkForm({ onAdd, onClose }: { onAdd: (link: ShowLink) => Promise<void>
   return (
     <form onSubmit={handleSubmit} className="space-y-3.5 mt-2">
       <p className="text-xs text-zinc-400 leading-snug">
-        输入第三方云盘（如 OneDrive 嵌入链接、Google Slides 链接等）或直接文件地址。
+        输入第三方云盘（如 OneDrive 嵌入链接、Google Slides 链接等）、直接文件地址或 HTML 网页版演示文稿地址。
       </p>
       <div className="space-y-3">
         <input
