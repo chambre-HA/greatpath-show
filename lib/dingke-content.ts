@@ -20,6 +20,12 @@ const R2_BASE = process.env.NEXT_PUBLIC_R2_PUBLIC_URL || 'https://greatpath-show
 /** HTML deck of the built-in script (the 慈经 deck rebuilt as a web page); 云堂定课 shows it on its screen. */
 export const DEFAULT_DINGKE_DECK_URL = `${R2_BASE}/shared/cijing-dingke/index.html`
 
+/** The HTML decks on R2 a 定课版本 can pick from (admin dropdown); any other https .html link also works. */
+export const DINGKE_DECKS: { label: string; url: string }[] = [
+  { label: '慈经定课', url: DEFAULT_DINGKE_DECK_URL },
+  { label: '慈经+八三定课', url: `${R2_BASE}/shared/cijing-basan-dingke/index.html` },
+]
+
 /** Both tracks are the ones extracted from the deck, uploaded once to R2. */
 export const DINGKE_AUDIO = {
   opening: {

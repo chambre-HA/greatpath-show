@@ -11,7 +11,7 @@ import {
 import { CSS } from '@dnd-kit/utilities'
 import { cloneLink, validateLinkInput } from '@/lib/links-store'
 import { AddDocPanel } from '@/components/AddDocPanel'
-import { DEFAULT_DINGKE_DECK_URL, DEFAULT_DINGKE_SECTIONS, DINGKE_AUDIO } from '@/lib/dingke-content'
+import { DEFAULT_DINGKE_DECK_URL, DEFAULT_DINGKE_SECTIONS, DINGKE_AUDIO, DINGKE_DECKS } from '@/lib/dingke-content'
 import { blocksToBody, parseBody } from '@/lib/dingke-resolve'
 import { SlidePane } from '@/components/DingkeParts'
 import type { ClassInfo, ClassSignin, DingkeSection, DingkeVariant, ResourceLink, ShowLink } from '@/types'
@@ -993,6 +993,7 @@ function DingkeVariantsManager({
   const [name, setName] = useState('')
   const [sections, setSections] = useState<DingkeSection[]>([])
   const [deckUrl, setDeckUrl] = useState('')
+  const [customDeck, setCustomDeck] = useState(false)
   const [startFrom, setStartFrom] = useState<'' | 'default' | string>('')
   const [editingSectionIndex, setEditingSectionIndex] = useState<number | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -1003,6 +1004,7 @@ function DingkeVariantsManager({
     setName('')
     setSections([])
     setDeckUrl('')
+    setCustomDeck(false)
     setStartFrom('')
     setEditingSectionIndex(null)
     setError(null)
@@ -1013,6 +1015,7 @@ function DingkeVariantsManager({
     setName('')
     setSections([])
     setDeckUrl('')
+    setCustomDeck(false)
     setStartFrom('')
     setError(null)
   }
@@ -1022,6 +1025,7 @@ function DingkeVariantsManager({
     setName(variant.name)
     setSections(variant.sections)
     setDeckUrl(variant.deckUrl ?? '')
+    setCustomDeck(false)
     setError(null)
   }
 
@@ -1159,16 +1163,38 @@ function DingkeVariantsManager({
               />
             </div>
             <div>
-              <label className="block text-[10px] uppercase tracking-wider font-bold text-zinc-500 mb-1.5">云堂演示页（HTML 链接）</label>
-              <input
-                className={field}
-                type="url"
-                inputMode="url"
-                placeholder="https://….html（留空：云堂以文字显示各环节）"
-                value={deckUrl}
-                onChange={e => setDeckUrl(e.target.value)}
-              />
-              <p className="text-[10px] text-zinc-600 mt-1">云堂定课的大屏显示这一页，每个环节对应一张幻灯片。</p>
+              <label className="block text-[10px] uppercase tracking-wider font-bold text-zinc-500 mb-1.5">云堂演示页</label>
+              {(() => {
+                const custom = customDeck || (!!deckUrl && !DINGKE_DECKS.some(d => d.url === deckUrl))
+                return (
+                  <>
+                    <select
+                      className={field}
+                      value={custom ? 'custom' : deckUrl}
+                      onChange={e => {
+                        const v = e.target.value
+                        setCustomDeck(v === 'custom')
+                        if (v !== 'custom') setDeckUrl(v)
+                      }}
+                    >
+                      {DINGKE_DECKS.map(d => <option key={d.url} value={d.url}>{d.label}</option>)}
+                      <option value="">无（云堂以文字显示各环节）</option>
+                      <option value="custom">其他链接…</option>
+                    </select>
+                    {custom && (
+                      <input
+                        className={`${field} mt-2`}
+                        type="url"
+                        inputMode="url"
+                        placeholder="https://….html"
+                        value={deckUrl}
+                        onChange={e => setDeckUrl(e.target.value)}
+                      />
+                    )}
+                  </>
+                )
+              })()}
+              <p className="text-[10px] text-zinc-600 mt-1">云堂定课的大屏显示这一份演示页，按其幻灯片推进。</p>
             </div>
             {editingId === 'new' && (
               <div>
@@ -1184,7 +1210,7 @@ function DingkeVariantsManager({
         )}
 
         {isDefaultView && (
-          <p className="text-[10px] text-zinc-500 break-all">云堂演示页：{DEFAULT_DINGKE_DECK_URL}</p>
+          <p className="text-[10px] text-zinc-500 break-all">云堂演示页：{DINGKE_DECKS.find(d => d.url === DEFAULT_DINGKE_DECK_URL)?.label}</p>
         )}
 
         {error && (
@@ -1379,7 +1405,7 @@ function DingkeVariantsManager({
                 <div className="min-w-0">
                   <p className="text-sm font-bold text-white">{variant.name}</p>
                   <p className="text-[10px] text-zinc-500 mt-0.5">
-                    {variant.sections.length} 个环节{variant.deckUrl ? ' · 有云堂演示页' : ''} ·{' '}
+                    {variant.sections.length} 个环节 · {variant.deckUrl ? (DINGKE_DECKS.find(d => d.url === variant.deckUrl)?.label ?? '自定义演示页') : '无演示页'} ·{' '}
                     {assigned.length ? `已关联 ${assigned.length} 个班级：${assigned.map(c => c.name).join('、')}` : '暂无班级关联'}
                   </p>
                 </div>

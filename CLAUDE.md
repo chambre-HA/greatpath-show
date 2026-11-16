@@ -28,7 +28,7 @@ embedded audio that only plays inside PowerPoint's slideshow mode.
   default are saved, so central script edits still reach classes that tweaked a
   section. Merge/parse logic is in `lib/dingke-resolve.ts`.
 - **Versions & decks**: a class can run a 定课版本 (`DingkeVariant`, admin 定课版本) instead of the
-  built-in script. Each version may carry `deckUrl`, the HTML deck 云堂定课 (gpgb-dingke) shows on its
+  built-in script. Each version may carry `deckUrl` (admin dropdown of `DINGKE_DECKS`: 慈经 / 慈经+八三, or another link), the HTML deck 云堂定课 (gpgb-dingke) shows on its
   screen; the built-in script's is `DEFAULT_DINGKE_DECK_URL` (shared/cijing-dingke). `/api/dingke` returns
   the class's `deckUrl` (null = none; the hall then shows the sections as text).
 - **Audio**: the deck's two MP3s were extracted and uploaded once to
