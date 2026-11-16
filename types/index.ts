@@ -205,6 +205,9 @@ export interface DingkeVariant {
   id: string
   name: string
   sections: DingkeSection[]
+  /** HTML deck (a self-contained .html page) 云堂定课 shows on its screen for this version.
+   *  Unset = no deck: the hall shows the sections as text slides. */
+  deckUrl?: string
   updatedAt: string
 }
 

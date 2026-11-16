@@ -37,6 +37,7 @@ export async function POST(req: Request) {
           id: body.id,
           name: body.name,
           sections: body.sections,
+          deckUrl: typeof body.deckUrl === 'string' ? body.deckUrl : undefined,
         }))
       case 'deleteDingkeVariant':
         await deleteDingkeVariant(body.id)

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { clearDingkeOverride, getBaseDingkeSections, getDingkeOverrides, setDingkeOverride } from '@/lib/r2-server'
+import { clearDingkeOverride, getBaseDingkeSections, getDingkeBase, getDingkeOverrides, setDingkeOverride } from '@/lib/r2-server'
 import { resolveSections } from '@/lib/dingke-resolve'
 
 export const runtime = 'nodejs'
@@ -10,13 +10,15 @@ export async function GET(req: Request) {
   const classCode = searchParams.get('class')
   if (!classCode) return NextResponse.json({ error: 'missing class' }, { status: 400 })
   try {
-    const [overrides, baseSections] = await Promise.all([
+    const [overrides, base] = await Promise.all([
       getDingkeOverrides(classCode),
-      getBaseDingkeSections(classCode),
+      getDingkeBase(classCode),
     ])
     return NextResponse.json({
-      sections: resolveSections(baseSections, overrides),
+      sections: resolveSections(base.sections, overrides),
       overriddenIds: Object.keys(overrides),
+      // The HTML deck 云堂定课 shows for this class's version (null = none; it shows the sections as text).
+      deckUrl: base.deckUrl,
     })
   } catch (e) {
     console.error('R2 read failed', e)

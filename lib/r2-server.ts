@@ -6,7 +6,7 @@ import {
   S3Client,
 } from '@aws-sdk/client-s3'
 import type { ClassInfo, ClassSignin, ClassSigninOverride, DedicationGroup, DedicationPerson, DingkeOverrides, DingkeSection, DingkeSectionOverride, DingkeVariant, MessageTemplate, ResourceLink, ShowLink } from '@/types'
-import { DEFAULT_DINGKE_SECTIONS } from './dingke-content'
+import { DEFAULT_DINGKE_DECK_URL, DEFAULT_DINGKE_SECTIONS } from './dingke-content'
 import { blocksToBody } from './dingke-resolve'
 
 const CLASSES_KEY = '_classes.json'
@@ -220,6 +220,7 @@ function normalizeDingkeVariant(
     id: variant.id?.trim() || crypto.randomUUID(),
     name: variant.name.trim(),
     sections: variant.sections,
+    deckUrl: variant.deckUrl?.trim() || undefined,
     updatedAt: new Date().toISOString(),
   }
 }
@@ -240,6 +241,7 @@ export async function saveDingkeVariant(
   if (next.sections.some(s => !s.id?.trim())) throw new Error('每个环节都需要 id')
   const ids = next.sections.map(s => s.id)
   if (new Set(ids).size !== ids.length) throw new Error('环节 id 不能重复')
+  if (next.deckUrl && !/^https:\/\/[^\s]+\.html?(\?[^\s]*)?$/i.test(next.deckUrl)) throw new Error('演示页链接需是 https://….html')
 
   const client = getClient()
   const variants = await listDingkeVariants()
@@ -266,16 +268,20 @@ export async function deleteDingkeVariant(id: string): Promise<void> {
   }
 }
 
-/** What a class actually runs before its own per-section overrides are applied. */
-export async function getBaseDingkeSections(classCode: string): Promise<DingkeSection[]> {
+/** What a class actually runs before its own per-section overrides are applied, and its HTML deck (null = none). */
+export async function getDingkeBase(classCode: string): Promise<{ sections: DingkeSection[]; deckUrl: string | null }> {
   const classes = await listClasses()
   const cls = classes.find(c => c.code === classCode)
   if (cls?.dingkeVariantId) {
     const variants = await listDingkeVariants()
     const variant = variants.find(v => v.id === cls.dingkeVariantId)
-    if (variant) return variant.sections
+    if (variant) return { sections: variant.sections, deckUrl: variant.deckUrl ?? null }
   }
-  return DEFAULT_DINGKE_SECTIONS
+  return { sections: DEFAULT_DINGKE_SECTIONS, deckUrl: DEFAULT_DINGKE_DECK_URL }
+}
+
+export async function getBaseDingkeSections(classCode: string): Promise<DingkeSection[]> {
+  return (await getDingkeBase(classCode)).sections
 }
 
 // ── Per-class sign-in link ─────────────────────────────────────────────────

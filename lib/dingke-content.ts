@@ -17,6 +17,9 @@ import type { DingkeSection } from '@/types'
 
 const R2_BASE = process.env.NEXT_PUBLIC_R2_PUBLIC_URL || 'https://greatpath-show-assets.vibeuncle.com'
 
+/** HTML deck of the built-in script (the 慈经 deck rebuilt as a web page); 云堂定课 shows it on its screen. */
+export const DEFAULT_DINGKE_DECK_URL = `${R2_BASE}/shared/cijing-dingke/index.html`
+
 /** Both tracks are the ones extracted from the deck, uploaded once to R2. */
 export const DINGKE_AUDIO = {
   opening: {
